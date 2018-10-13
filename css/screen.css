@@ -17,7 +17,7 @@ html, body {
 
 body {
   background-color: #F9F9F5;
-  font: 15px 'Adobe Hebrew', Courier, 'Microsoft Yahei';
+  font: 15px Courier, 'Microsoft Yahei';
   /**font-size: small;*/
   text-align: left;
   color: #666;
