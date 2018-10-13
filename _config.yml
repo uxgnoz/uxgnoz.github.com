@@ -1,0 +1,5 @@
+destination: ./_site
+port: 4000
+highlighter:    pygments
+permalink:   /:title/
+markdown: kramdown

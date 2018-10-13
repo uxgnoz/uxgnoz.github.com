@@ -1,1 +1,15 @@
-hello world
+---
+layout: default
+title: Rolandz
+---
+
+<div id="home">
+    <h2>文档列表</h2>
+    <hr/>
+    <ul class="index_posts">
+        {% for post in site.posts %}
+        <li style="list-style:none"><span>{{ post.date | date: "%F" }}</span> &raquo; <a href="{{ post.url }}" target="_blank">{{ post.title }}</a></li>
+        {% endfor %}
+    </ul>
+
+</div>
