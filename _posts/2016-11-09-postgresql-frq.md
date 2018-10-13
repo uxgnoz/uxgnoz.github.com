@@ -10,12 +10,12 @@ categories: 笔记, mysql
 
 ### 设置角色/用户可链接数
 
-{% highlight mysql linenos%}
+{% highlight linenos%}
 alter role xxx_role connection limit 80;
 {% endhighlight %}
 
 ### 查看当前数据库连接情况
 
-{% highlight mysql linenos%}
+{% highlight linenos%}
 select * from pg_stat_activity;
 {% endhighlight %}
