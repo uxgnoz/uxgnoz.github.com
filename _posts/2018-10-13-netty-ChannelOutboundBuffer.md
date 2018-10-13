@@ -56,7 +56,9 @@ public void addMessage(Object msg, int size, ChannelPromise promise) {
 
 ## ChannelOutboundBuffer#addFlush
 
-ChannelOutboundBuffer#addFlush 把链表中处于 [unflushedEntry, tailEntry] 的 Entry 加入到 [flushedEntry, unflushedEntry) 区间。遍历的过程当中，那些 promise 不能设置成 uncancellable 的 Entry ，调用 Entry#cancel 回收内存并减少 totalPendingSize ，如果 totalPendingSize 小于 channel 配置的写缓冲区低水位线，则触发 ChannelPipeline 的 ChannelWritabilityChanged 事件，设置可写。最后置 unflushedEntry 为 null。
+ChannelOutboundBuffer#addFlush 把链表中处于 [unflushedEntry, tailEntry] 的 Entry 加入到 [flushedEntry, unflushedEntry) 区间。
+
+遍历的过程当中，那些 promise 不能设置成 uncancellable 的 Entry ，调用 Entry#cancel 回收内存并减少 totalPendingSize ，如果 totalPendingSize 小于 channel 配置的写缓冲区低水位线，则触发 ChannelPipeline 的 ChannelWritabilityChanged 事件，设置可写。最后置 unflushedEntry 为 null。
 
 {% highlight java %}
 public void addFlush() {
