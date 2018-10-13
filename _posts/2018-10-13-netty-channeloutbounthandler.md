@@ -213,7 +213,11 @@ public void removeBytes(long writtenBytes) {
 
 ## ChannelOutboundBuffer#nioBuffers
 
-ChannelOutboundBuffer#nioBuffers(int maxCount, long maxBytes) 返回区间 [flushedEntry, unflushedEntry) Entry#msg 中的底层数据载体 ByteBufer 的数组。 Entry 中的数据存放在一个或多个 ByteBuf 中，而一个 ByteBuf 底层由一个或多个 ByteBuffer 组成（简单理解）。最终返回的 ByteBuffer 数组存放在线程本地变量中。nioBufferCount 为数组大小，而 nioBufferSize 数组中的所有待发送数据的大小。 maxCount 为 ByteBufer[] 最大长度，而 maxBytes 为 ByteBufer[] 中数据的数据总量最大值。由于 maxCount 和 maxBytes 的存在，很多时候只能返回区间  [flushedEntry, unflushedEntry) 上的一部分数据，甚至某个 Entry 的一部分数据。
+ChannelOutboundBuffer#nioBuffers(int maxCount, long maxBytes) 返回区间 [flushedEntry, unflushedEntry) Entry#msg 中的底层数据载体 ByteBufer 的数组。 
+
+Entry 中的数据存放在一个或多个 ByteBuf 中，而一个 ByteBuf 底层由一个或多个 ByteBuffer 组成（简单理解）。最终返回的 ByteBuffer 数组存放在线程本地变量中。
+
+nioBufferCount 为数组大小，而 nioBufferSize 数组中的所有待发送数据的大小。 maxCount 为 ByteBufer[] 最大长度，而 maxBytes 为 ByteBufer[] 中数据的数据总量最大值。由于 maxCount 和 maxBytes 的存在，很多时候只能返回区间  [flushedEntry, unflushedEntry) 上的一部分数据，甚至某个 Entry 的一部分数据。
 
 {% highlight java %}
 public ByteBuffer[] nioBuffers(int maxCount, long maxBytes) {
