@@ -218,7 +218,7 @@ ol, ul {
   background-color: rgba(102, 128, 153, 0.0470588);
   padding: 5px 5px 5px 10px;
   line-height: 20px;
-  font-family: 'Adobe Hebrew', Courier, 'Microsoft Yahei', sans-serif;
+  font-family: Courier, 'Microsoft Yahei', sans-serif;
   word-wrap: break-word;  
 }
 
