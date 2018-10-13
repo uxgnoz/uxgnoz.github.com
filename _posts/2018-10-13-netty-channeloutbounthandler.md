@@ -1,5 +1,6 @@
 ---
 layout: posts
+title: Netty 之发送缓冲区 ChannelOutboundBuffer
 ---
 
 # Netty 之发送缓冲区 ChannelOutboundBuffer
@@ -10,7 +11,7 @@ layout: posts
 
 ChannelOutboundBuffer 为 Channel 的数据发送缓冲区，数据封装成以 Entry 节点的形式存放在单向链表中。链表有三个指针：
 
-{% highlight java linenos %}
+{% highlight java %}
 // The Entry that is the first in the linked-list structure that was flushed
 private Entry flushedEntry;
 // The Entry which is the first unflushed in the linked-list structure
@@ -31,7 +32,7 @@ ChannelOutboundBuffer#addMessage 在链表尾部添加 Entry，增加缓存中�
 
 > invokeLater 参数指定是否立即执行还是异步执行。
 
-{% highlight java linenos %}
+{% highlight java %}
 public void addMessage(Object msg, int size, ChannelPromise promise) {
     Entry entry = Entry.newInstance(msg, size, total(msg), promise);
     if (tailEntry == null) {
@@ -57,7 +58,7 @@ public void addMessage(Object msg, int size, ChannelPromise promise) {
 
 ChannelOutboundBuffer#addFlush 把链表中处于 [unflushedEntry, tailEntry] 的 Entry 加入到 [flushedEntry, unflushedEntry) 区间。遍历的过程当中，那些 promise 不能设置成 uncancellable 的 Entry ，调用 Entry#cancel 回收内存并减少 totalPendingSize ，如果 totalPendingSize 小于 channel 配置的写缓冲区低水位线，则触发 ChannelPipeline 的 ChannelWritabilityChanged 事件，设置可写。最后置 unflushedEntry 为 null。
 
-{% highlight java linenos %}
+{% highlight java %}
     public void addFlush() {
         Entry entry = unflushedEntry;
         if (entry != null) {
@@ -87,7 +88,7 @@ ChannelOutboundBuffer#addFlush 把链表中处于 [unflushedEntry, tailEntry] �
 
 ChannelOutboundBuffer#current 返回 flushedEntry 指向的 Entry 中的数据。
 
-{% highlight java linenos %}
+{% highlight java %}
     public Object current() {
         Entry entry = flushedEntry;
         if (entry == null) {
@@ -104,7 +105,7 @@ ChannelOutboundBuffer#current 返回 flushedEntry 指向的 Entry 中的数据�
 
 ChannelOutboundBuffer#progress 进度通知。如果 flushedEntry 中的 promise 为 ChannelProgressivePromise 类型，则尝试通知进度，也就是当前 Entry 中的数据真正写入 channel 的进度。
 
-{% highlight java linenos %}
+{% highlight java %}
     public void progress(long amount) {
         Entry e = flushedEntry;
         assert e != null;
@@ -124,7 +125,7 @@ ChannelOutboundBuffer#progress 进度通知。如果 flushedEntry 中的 promise
 ChannelOutboundBuffer#remove  从链表中删除 flushedEntry 指向的 Entry ， flushedEntry 指向下一个 Entry。
 如果 flushedEntry 为 null，则清空 nioBuffers 缓存，直接返回 false。否则从链表中删除 Entry，设置该 Entry 的 promise 为 success；减少 totalPendingSize，如果 totalPendingSize 小于 channel 配置的写缓存低水位线，则触发 ChannelPipeline 的 ChannelWritabilityChanged 事件。最后回收 Entry。
 
-{% highlight java linenos %}
+{% highlight java %}
     public boolean remove() {
         Entry e = flushedEntry;
         if (e == null) {
@@ -177,7 +178,7 @@ ChannelOutboundBuffer#remove(Throwable cause) 基本逻辑跟 ChannelOutboundBuf
 
 ChannelOutboundBuffer#removeBytes(long writtenBytes) 从 flushedEntry 指向的 Entry 开始，依次删除数据全部发送完的 Entry，更新部分发送完 Entry 的 readerIndex，并对每个 Entry 中的 promise 发出进度通知。本方法的前提是链表中 Entry 的数据类型为 ByteBuf。最后清空 nioBuffers 缓存。
 
-{% highlight java linenos %}
+{% highlight java %}
     public void removeBytes(long writtenBytes) {
         for (;;) {
             Object msg = current();
@@ -214,7 +215,7 @@ ChannelOutboundBuffer#removeBytes(long writtenBytes) 从 flushedEntry 指向的 
 
 ChannelOutboundBuffer#nioBuffers(int maxCount, long maxBytes) 返回区间 [flushedEntry, unflushedEntry) Entry#msg 中的底层数据载体 ByteBufer 的数组。 Entry 中的数据存放在一个或多个 ByteBuf 中，而一个 ByteBuf 底层由一个或多个 ByteBuffer 组成（简单理解）。最终返回的 ByteBuffer 数组存放在线程本地变量中。nioBufferCount 为数组大小，而 nioBufferSize 数组中的所有待发送数据的大小。 maxCount 为 ByteBufer[] 最大长度，而 maxBytes 为 ByteBufer[] 中数据的数据总量最大值。由于 maxCount 和 maxBytes 的存在，很多时候只能返回区间  [flushedEntry, unflushedEntry) 上的一部分数据，甚至某个 Entry 的一部分数据。
 
-{% highlight java linenos %}
+{% highlight java %}
     public ByteBuffer[] nioBuffers(int maxCount, long maxBytes) {
         assert maxCount > 0;
         assert maxBytes > 0;
