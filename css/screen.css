@@ -95,7 +95,7 @@ ul.index_posts {
   list-style-type: none;
   margin-bottom: 25px;
   margin-left: 5px;
-  font-size: 13px;
+  font-size: 15px;
 }
 
 ul.posts li {
@@ -111,7 +111,7 @@ ul.posts span {
 ul.index_posts span {
   color: #aaa;
   font-family: 'Adobe Hebrew', Courier,'Microsoft Yahei', sans-serif;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 
