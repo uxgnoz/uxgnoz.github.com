@@ -20,7 +20,7 @@ body {
   font: 15px Courier, 'Microsoft Yahei';
   /**font-size: small;*/
   text-align: left;
-  color: #444;
+  color: #333;
   letter-spacing: 1px;
 }
 
@@ -214,7 +214,7 @@ ol, ul {
 #post pre {
   border-left: 10px solid rgba(102, 128, 153, 1);
   /*border-radius: 3px;*/
-  margin: 5px 0px 5px 0px;
+  margin: 5px 5px 5px 5px;
   background-color: rgba(102, 128, 153, 0.0470588);
   padding: 5px 5px 5px 10px;
   line-height: 20px;
