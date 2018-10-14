@@ -158,7 +158,7 @@ ChannelFuture writeAndFlush(Object msg, ChannelPromise promise);
 
 ------
 
-## future 类
+## Future 类
 
 {% highlight java %}
 ChannelFuture newFailedFuture(Throwable cause);
