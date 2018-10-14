@@ -43,7 +43,9 @@ Channel 注册到 EventLoop 时，触发 channelRegistered 事件，开始调用
 
 方法 #findContextInbound 从当前 ctx 开始，查找下一个 inbound 为 true 的 ctx。
 
-静态方法 @invokeChannelRegistered 直接调用下一个 ctx 的 #invokeChannelRegistered 方法。调用的方式有点特别，如果当前代码执行在工作线程，则直接调用，否则打包成任务，再添加到工作线程异步执行。
+静态方法 @invokeChannelRegistered 直接调用下一个 ctx 的 #invokeChannelRegistered 方法。
+
+> 调用的方式有点特别，如果当前代码执行在工作线程，则直接调用，否则打包成任务，再添加到工作线程异步执行。
 
 {% highlight java %}
 public ChannelHandlerContext fireChannelRegistered() {
