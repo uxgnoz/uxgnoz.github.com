@@ -140,6 +140,70 @@ ChannelFuture deregister();
 ChannelFuture deregister(ChannelPromise promise);
 {% endhighlight %}
 
+### ChannelHandlerContext#bind()
+
+基本上跟上文中的 #fireChannelRegistered 一个套路啊。
+
+方法 #findContextOutbound 从当前 ctx 开始，查找下一个 outbound 为 true 的 ctx。最终还是要调用 ctx 的 ChannelOutboundHandler#bind 方法。
+
+{% highlight java %}
+public ChannelFuture bind(SocketAddress localAddress) {
+    return bind(localAddress, newPromise());
+}
+
+public ChannelFuture bind(final SocketAddress localAddress, final ChannelPromise promise) {
+    if (localAddress == null) {
+        throw new NullPointerException("localAddress");
+    }
+    if (isNotValidPromise(promise, false)) {
+        // cancelled
+        return promise;
+    }
+
+    final AbstractChannelHandlerContext next = findContextOutbound();
+    EventExecutor executor = next.executor();
+    if (executor.inEventLoop()) {
+        next.invokeBind(localAddress, promise);
+    } else {
+        safeExecute(executor, new Runnable() {
+            @Override
+            public void run() {
+                next.invokeBind(localAddress, promise);
+            }
+        }, promise, null);
+    }
+    return promise;
+}
+
+private void invokeBind(SocketAddress localAddress, ChannelPromise promise) {
+    if (invokeHandler()) {
+        try {
+            ((ChannelOutboundHandler) handler()).bind(this, localAddress, promise);
+        } catch (Throwable t) {
+            notifyOutboundHandlerException(t, promise);
+        }
+    } else {
+        bind(localAddress, promise);
+    }
+}
+{% endhighlight %}
+
+和 #findContextInbound 相反，查找下一个 ctx 时，是从当前 ctx 往前查找。很明显，ctx 将会形成一个双向链表。
+
+字段 outbound 指示当前 ctx 的 ChannelHandler 类型为 ChannelOutboundHandler 。
+
+{% highlight java %}
+private AbstractChannelHandlerContext findContextOutbound() {
+    AbstractChannelHandlerContext ctx = this;
+    do {
+        ctx = ctx.prev;
+    } while (!ctx.outbound);
+    return ctx;
+}
+{% endhighlight %}
+
+其他方法在套路上是一样一样的，不再赘述。
+
 ------
 
 ## 读写类
@@ -156,9 +220,80 @@ ChannelFuture writeAndFlush(Object msg);
 ChannelFuture writeAndFlush(Object msg, ChannelPromise promise);
 {% endhighlight %}
 
+### ChannelHandlerContext#read()
+
+略。
+
+### ChannelHandlerContext#write()
+
+#write 最终调用私有方法 $write。
+
+不管中间过程咋样，最终还是去调用 ChannelOutboundHandler#write，#flush 方法。
+
+{% highlight java %}
+private void write(Object msg, boolean flush, ChannelPromise promise) {
+    AbstractChannelHandlerContext next = findContextOutbound();
+    final Object m = pipeline.touch(msg, next);
+    EventExecutor executor = next.executor();
+    if (executor.inEventLoop()) {
+        if (flush) {
+            next.invokeWriteAndFlush(m, promise);
+        } else {
+            next.invokeWrite(m, promise);
+        }
+    } else {
+        AbstractWriteTask task;
+        if (flush) {
+            task = WriteAndFlushTask.newInstance(next, m, promise);
+        }  else {
+            task = WriteTask.newInstance(next, m, promise);
+        }
+        safeExecute(executor, task, promise, m);
+    }
+}
+
+private void invokeWrite(Object msg, ChannelPromise promise) {
+    if (invokeHandler()) {
+        invokeWrite0(msg, promise);
+    } else {
+        write(msg, promise);
+    }
+}
+
+private void invokeWrite0(Object msg, ChannelPromise promise) {
+    try {
+        ((ChannelOutboundHandler) handler()).write(this, msg, promise);
+    } catch (Throwable t) {
+        notifyOutboundHandlerException(t, promise);
+    }
+}
+
+private void invokeWriteAndFlush(Object msg, ChannelPromise promise) {
+    if (invokeHandler()) {
+        invokeWrite0(msg, promise);
+        invokeFlush0();
+    } else {
+        writeAndFlush(msg, promise);
+    }
+}
+
+private void invokeFlush0() {
+    try {
+        ((ChannelOutboundHandler) handler()).flush(this);
+    } catch (Throwable t) {
+        notifyHandlerException(t);
+    }
+}
+
+{% endhighlight %}
+
+### ChannelHandlerContext#flush()
+
+略。
+
 ------
 
-## Future 类
+### Future 类
 
 {% highlight java %}
 ChannelFuture newFailedFuture(Throwable cause);
@@ -168,9 +303,10 @@ ChannelFuture newSucceededFuture();
 ChannelPromise voidPromise();
 {% endhighlight %}
 
-------
+略。
 
-未完待续。。。
+## 总结
 
-{% highlight java %}
-{% endhighlight %}
+不论 ChannelHandlerContext 想干啥，最终都得落实到 ChannelHandler 上去，它就是个传话筒。
+
+> ChannelHandlerContext 的其他部分我们放到 ChannelPipiline 说。
