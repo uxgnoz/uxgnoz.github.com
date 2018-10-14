@@ -37,7 +37,7 @@ ChannelHandlerContext fireChannelWritabilityChanged();
 
 ## ChannelHandlerContext#fireChannelRegistered()
 
-Channel 注册到 EventLoop 时，触发 channelRegister 事件，开始调用下一个 ChannelHandler 的 #channelRegistered(ChannelHandlerContext) 方法。
+Channel 注册到 EventLoop 时，触发 channelRegistered 事件，开始调用下一个 ChannelHandler 的 #channelRegistered(ChannelHandlerContext) 方法。
 
 方法 #findContextInbound 从当前 ctx 开始，查找下一个 inbound 为 true 的 ctx。
 
@@ -64,7 +64,7 @@ static void invokeChannelRegistered(final AbstractChannelHandlerContext next) {
 }
 {% endhighlight %}
 
-在 #invokeChannelRegistered 中，如果当前 ctx 的 ChannelHandler 准备就绪，那么直接调用它的 #channelRegistered 方法。否则继续往下一个 ChannelHandler 传播 channelRegister 事件。
+在 #invokeChannelRegistered 中，如果当前 ctx 的 ChannelHandler 准备就绪，那么直接调用它的 #channelRegistered 方法。否则继续往下一个 ChannelHandler 传播 channelRegistered 事件。
 
 {% highlight java %}
 private void invokeChannelRegistered() {
