@@ -28,9 +28,7 @@ private int flushed;
 
 ## ChannelOutboundBuffer#addMessage
 
-ChannelOutboundBuffer#addMessage 在链表尾部添加 Entry，增加缓存中的数据大小 totalPendingSize ，如果 totalPendingSize 大于 channel 配置的写缓冲区高水位线，则触发 ChannelPipeline 的 ChannelWritabilityChanged 事件，禁止继续写入。
-
-> invokeLater 参数指定是否立即执行还是异步执行。
+ChannelOutboundBuffer#addMessage 在链表尾部添加 Entry。
 
 {% highlight java %}
 public void addMessage(Object msg, int size, ChannelPromise promise) {
@@ -46,19 +44,46 @@ public void addMessage(Object msg, int size, ChannelPromise promise) {
         unflushedEntry = entry;
     }
 
-    // increment pending bytes after adding message to the unflushed arrays.
-    // See https://github.com/netty/netty/issues/1619
     incrementPendingOutboundBytes(entry.pendingSize, false);
 }
 {% endhighlight %}
 
+在方法 #incrementPendingOutboundBytes() 中修改缓存中的数据大小 totalPendingSize 。如果 totalPendingSize 大于 channel 配置的写缓冲区高水位线，则触发 ChannelPipeline 的 ChannelWritabilityChanged 事件，禁止继续写入。
+
+{% highlight java %}
+private void incrementPendingOutboundBytes(long size, boolean invokeLater) {
+    if (size == 0) {
+        return;
+    }
+
+    long newWriteBufferSize = TOTAL_PENDING_SIZE_UPDATER.addAndGet(this, size);
+    if (newWriteBufferSize > channel.config().getWriteBufferHighWaterMark()) {
+        setUnwritable(invokeLater);
+    }
+}
+
+private void setUnwritable(boolean invokeLater) {
+    for (;;) {
+        final int oldValue = unwritable;
+        final int newValue = oldValue | 1;
+        if (UNWRITABLE_UPDATER.compareAndSet(this, oldValue, newValue)) {
+            if (oldValue == 0 && newValue != 0) {
+                fireChannelWritabilityChanged(invokeLater);
+            }
+            break;
+        }
+    }
+}
+{% endhighlight %}
+
+> invokeLater 参数指定是否立即执行还是异步执行。
 ------
 
 ## ChannelOutboundBuffer#addFlush
 
-ChannelOutboundBuffer#addFlush 把链表中处于 [unflushedEntry, tailEntry] 的 Entry 加入到 [flushedEntry, unflushedEntry) 区间。
+ChannelOutboundBuffer#addFlush 把当前链表中处于 [unflushedEntry, tailEntry] 的 Entry 逐个加入到 [flushedEntry, unflushedEntry) 区间。
 
-遍历的过程当中，那些 promise 不能设置成 uncancellable 的 Entry ，调用 Entry#cancel 回收内存并减少 totalPendingSize ，如果 totalPendingSize 小于 channel 配置的写缓冲区低水位线，则触发 ChannelPipeline 的 ChannelWritabilityChanged 事件，设置可写。最后置 unflushedEntry 为 null。
+遍历的过程当中，那些 promise 不能设置成 uncancellable 的 Entry ，调用 Entry#cancel 回收内存并减少 totalPendingSize 。如果 totalPendingSize 小于 channel 配置的写缓冲区低水位线，则触发 ChannelPipeline 的 ChannelWritabilityChanged 事件，设置可写。最后置 unflushedEntry 为 null。
 
 {% highlight java %}
 public void addFlush() {
@@ -81,6 +106,38 @@ public void addFlush() {
         // All flushed so reset unflushedEntry
         unflushedEntry = null;
     }
+}
+
+private void decrementPendingOutboundBytes(long size, boolean invokeLater, 
+        boolean notifyWritability) {
+    if (size == 0) {
+        return;
+    }
+
+    long newWriteBufferSize = TOTAL_PENDING_SIZE_UPDATER.addAndGet(this, -size);
+    if (notifyWritability && newWriteBufferSize < channel.config().getWriteBufferLowWaterMark()) {
+        setWritable(invokeLater);
+    }
+}
+
+// Entry#cancel()
+int cancel() {
+    if (!cancelled) {
+        cancelled = true;
+        int pSize = pendingSize;
+
+        // release message and replace with an empty buffer
+        ReferenceCountUtil.safeRelease(msg);
+        msg = Unpooled.EMPTY_BUFFER;
+
+        pendingSize = 0;
+        total = 0;
+        progress = 0;
+        bufs = null;
+        buf = null;
+        return pSize;
+    }
+    return 0;
 }
 {% endhighlight %}
 
@@ -125,7 +182,10 @@ public void progress(long amount) {
 ## ChannelOutboundBuffer#remove
 
 ChannelOutboundBuffer#remove  从链表中删除 flushedEntry 指向的 Entry ， flushedEntry 指向下一个 Entry。
-如果 flushedEntry 为 null，则清空 nioBuffers 缓存，直接返回 false。否则从链表中删除 Entry，设置该 Entry 的 promise 为 success；减少 totalPendingSize，如果 totalPendingSize 小于 channel 配置的写缓存低水位线，则触发 ChannelPipeline 的 ChannelWritabilityChanged 事件。最后回收 Entry。
+
+如果 flushedEntry 为 null，则清空 nioBuffers 缓存，直接返回 false。否则从链表中删除 Entry，设置该 Entry 的 promise 为 success；修改 totalPendingSize，如果 totalPendingSize 小于 channel 配置的写缓存低水位线，则触发 ChannelPipeline 的 ChannelWritabilityChanged 事件。
+
+最后回收 Entry。
 
 {% highlight java %}
 public boolean remove() {
@@ -170,7 +230,7 @@ private void removeEntry(Entry e) {
 
 ------
 
-## ChannelOutboundBuffer#remove
+## ChannelOutboundBuffer#remove(Throwable cause)
 
 ChannelOutboundBuffer#remove(Throwable cause) 基本逻辑跟 ChannelOutboundBuffer#remove一致，除了设置 Entry 的 promise 为 fail。代码略。
 
@@ -178,7 +238,11 @@ ChannelOutboundBuffer#remove(Throwable cause) 基本逻辑跟 ChannelOutboundBuf
 
 ## ChannelOutboundBuffer#removeBytes
 
-ChannelOutboundBuffer#removeBytes(long writtenBytes) 从 flushedEntry 指向的 Entry 开始，依次删除数据全部发送完的 Entry，更新部分发送完 Entry 的 readerIndex，并对每个 Entry 中的 promise 发出进度通知。本方法的前提是链表中 Entry 的数据类型为 ByteBuf。最后清空 nioBuffers 缓存。
+ChannelOutboundBuffer#removeBytes(long writtenBytes) 从 flushedEntry 指向的 Entry 开始，依次删除数据全部发送完的 Entry，更新部分发送完 Entry 的 readerIndex，并对每个 Entry 中的 promise 发出进度通知。
+
+最后清空 nioBuffers 缓存。
+
+本方法的前提是链表中 Entry 的数据类型为 ByteBuf。
 
 {% highlight java %}
 public void removeBytes(long writtenBytes) {
@@ -215,11 +279,15 @@ public void removeBytes(long writtenBytes) {
 
 ## ChannelOutboundBuffer#nioBuffers
 
-ChannelOutboundBuffer#nioBuffers(int maxCount, long maxBytes) 返回区间 [flushedEntry, unflushedEntry) Entry#msg 中的底层数据载体 ByteBufer 的数组。 
+ChannelOutboundBuffer#nioBuffers(int maxCount, long maxBytes) 返回区间 [flushedEntry, unflushedEntry) 上Entry#msg 中的底层数据载体 ByteBufer 的数组。 
 
 Entry 中的数据存放在一个或多个 ByteBuf 中，而一个 ByteBuf 底层由一个或多个 ByteBuffer 组成（简单理解）。最终返回的 ByteBuffer 数组存放在线程本地变量中。
 
-nioBufferCount 为数组大小，而 nioBufferSize 数组中的所有待发送数据的大小。 maxCount 为 ByteBufer[] 最大长度，而 maxBytes 为 ByteBufer[] 中数据的数据总量最大值。由于 maxCount 和 maxBytes 的存在，很多时候只能返回区间  [flushedEntry, unflushedEntry) 上的一部分数据，甚至某个 Entry 的一部分数据。
+nioBufferCount 为数组大小，而 nioBufferSize 数组中的所有待发送数据的大小。 
+
+maxCount 为 ByteBufer[] 最大长度，而 maxBytes 为 ByteBufer[] 中数据的数据总量最大值。由于 maxCount 和 maxBytes 的存在，很多时候只能返回区间  [flushedEntry, unflushedEntry) 上的一部分数据，甚至某个 Entry 的一部分数据。
+
+> 正如代码注释中所写，部分操作系统的 writeX() 系统调用最大只能允许 Integer.MAX_VALUE 字节的数据写入。
 
 {% highlight java %}
 public ByteBuffer[] nioBuffers(int maxCount, long maxBytes) {
