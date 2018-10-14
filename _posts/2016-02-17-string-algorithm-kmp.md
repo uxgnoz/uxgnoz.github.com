@@ -8,16 +8,15 @@ categories: python, java, kmp, algorithm
 
 ---
 
-##
-
 找出 P 的所有前缀集合 CP，找出 P 的所有后缀集合 CS，求 CP 和 CS 的交集中长度最大的元素，称之为 P 的『最长前后缀』。
+
 ---
 
 ## 算法实现及分析
 
 下面的代码实现了前缀计算函数：
 
-{% highlight python linenos%}
+{% highlight python %}
 def COMPUTE_PREFIX(P):
     pi = []
     pi.insert(0, 0)
@@ -37,7 +36,7 @@ def COMPUTE_PREFIX(P):
 
 下面的代码实现了 KMP 算法主体部分：
 
-{% highlight python linenos%}
+{% highlight python %}
 def KMP_MATCHER(T, P):
     pi = COMPUTE_PREFIX(P)
     q = 0   # 已匹配的字符数
