@@ -37,6 +37,12 @@ ChannelHandlerContext fireChannelReadComplete();
 ChannelHandlerContext fireChannelWritabilityChanged();
 {% endhighlight %}
 
+ChannelOutboundInvoker 中的方法可就多了，分为如下几类：
+
+    * 连接类
+    * 读写类
+    * future 类
+
 ## ChannelHandlerContext#fireChannelRegistered()
 
 Channel 注册到 EventLoop 时，触发 channelRegistered 事件，开始调用下一个 ChannelHandler 的 #channelRegistered(ChannelHandlerContext) 方法。
@@ -108,6 +114,59 @@ private static boolean isInbound(ChannelHandler handler) {
 {% endhighlight %}
 
 ChannelInboundInvoker 中的其他 8 个方法实现类似，不再赘述。
+
+------
+
+## 连接类
+
+连接类包括如下几个方法：
+
+{% highlight java %}
+ChannelFuture bind(SocketAddress localAddress);
+ChannelFuture bind(SocketAddress localAddress, ChannelPromise promise);
+
+ChannelFuture connect(SocketAddress remoteAddress);
+ChannelFuture connect(SocketAddress remoteAddress, ChannelPromise promise);
+ChannelFuture connect(SocketAddress remoteAddress, SocketAddress localAddress);
+ChannelFuture connect(SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise);
+
+ChannelFuture close();
+ChannelFuture close(ChannelPromise promise);
+
+ChannelFuture disconnect();
+ChannelFuture disconnect(ChannelPromise promise);
+
+ChannelFuture deregister();
+ChannelFuture deregister(ChannelPromise promise);
+{% endhighlight %}
+
+------
+
+## 读写类
+
+{% highlight java %}
+ChannelOutboundInvoker read();
+
+ChannelFuture write(Object msg);
+ChannelFuture write(Object msg, ChannelPromise promise);
+
+ChannelOutboundInvoker flush();
+
+ChannelFuture writeAndFlush(Object msg);
+ChannelFuture writeAndFlush(Object msg, ChannelPromise promise);
+{% endhighlight %}
+
+------
+
+## future 类
+
+{% highlight java %}
+ChannelFuture newFailedFuture(Throwable cause);
+ChannelProgressivePromise newProgressivePromise();
+ChannelPromise newPromise();
+ChannelFuture newSucceededFuture();
+ChannelPromise voidPromise();
+{% endhighlight %}
 
 ------
 
