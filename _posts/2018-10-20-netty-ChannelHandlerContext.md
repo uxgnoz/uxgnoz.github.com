@@ -39,9 +39,9 @@ ChannelHandlerContext fireChannelWritabilityChanged();
 
 ChannelOutboundInvoker 中的方法可就多了，分为如下几类：
 
-    * 连接类
-    * 读写类
-    * future 类
+* 连接类
+* 读写类
+* Future 类
 
 ## ChannelHandlerContext#fireChannelRegistered()
 
