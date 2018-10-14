@@ -77,6 +77,7 @@ private void setUnwritable(boolean invokeLater) {
 {% endhighlight %}
 
 > invokeLater 参数指定是否立即执行还是异步执行。
+
 ------
 
 ## ChannelOutboundBuffer#addFlush
