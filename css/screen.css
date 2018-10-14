@@ -17,7 +17,7 @@ html, body {
 
 body {
   background-color: #F9F9F5;
-  font: 15px Courier, 'Microsoft Yahei';
+  font: 15px 'Microsoft Yahei';
   /**font-size: small;*/
   text-align: left;
   color: #333;
@@ -238,7 +238,7 @@ ol, ul {
   border: none;
   padding: 0;
   font-size: 13px;
-  font-family: "Courier";
+  font-family: "Consolas", "Courier";
   letter-spacing: 0px;
   /*background-color: #f2f2f2;*/
   font-weight: 600;
