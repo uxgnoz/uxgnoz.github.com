@@ -253,6 +253,34 @@ private void addLast0(AbstractChannelHandlerContext newCtx) {
 }
 {% endhighlight %}
 
+### ChannelPipeline#addBefore
+
+逻辑和 #addFirst 类似。
+
+{% highlight java %}
+// 在链表元素 ctx 之前插入 newCtx
+private static void addBefore0(AbstractChannelHandlerContext ctx, AbstractChannelHandlerContext newCtx) {
+    newCtx.prev = ctx.prev;
+    newCtx.next = ctx;
+    ctx.prev.next = newCtx;
+    ctx.prev = newCtx;
+}
+{% endhighlight %}
+
+### ChannelPipeline#addAfter
+
+逻辑和 #addFirst 类似。
+
+{% highlight java %}
+// 在链表元素 ctx 之后插入 newCtx
+private static void addAfter0(AbstractChannelHandlerContext ctx, AbstractChannelHandlerContext newCtx) {
+    newCtx.prev = ctx;
+    newCtx.next = ctx.next;
+    ctx.next.prev = newCtx;
+    ctx.next = newCtx;
+}
+{% endhighlight %}
+
 ## ChannelInboundInvoker api
 
 ## ChannelOutboundInvoker api
