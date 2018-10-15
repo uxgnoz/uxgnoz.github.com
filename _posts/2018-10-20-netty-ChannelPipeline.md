@@ -133,6 +133,7 @@ private AbstractChannelHandlerContext newContext(EventExecutorGroup group, Strin
     return new DefaultChannelHandlerContext(this, childExecutor(group), name, handler);
 }
 
+// 在双链表的表头插入 newCtx
 private void addFirst0(AbstractChannelHandlerContext newCtx) {
     AbstractChannelHandlerContext nextCtx = head.next;
     newCtx.prev = head;
@@ -190,6 +191,7 @@ private void callHandlerAdded0(final AbstractChannelHandlerContext ctx) {
  */
 private PendingHandlerCallback pendingHandlerCallbackHead;
 
+// 在 pendingHandlerCallbackHead 作表头的单向链表尾部插入 add 或 remove 任务
 private void callHandlerCallbackLater(AbstractChannelHandlerContext ctx, boolean added) {
     assert !registered;
 
