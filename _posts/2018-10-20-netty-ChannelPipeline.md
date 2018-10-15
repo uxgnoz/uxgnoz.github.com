@@ -225,9 +225,11 @@ private final class PendingHandlerAddedTask extends PendingHandlerCallback {
 
         // 判断当前代码执行是否在工作线程
         if (executor.inEventLoop()) {
+            // 直接调用
             callHandlerAdded0(ctx);
         } else {
             try {
+                // 向工作线程提交任务
                 executor.execute(this);
             } catch (RejectedExecutionException e) {
                 remove0(ctx);
@@ -278,6 +280,84 @@ private static void addAfter0(AbstractChannelHandlerContext ctx, AbstractChannel
     newCtx.next = ctx.next;
     ctx.next.prev = newCtx;
     ctx.next = newCtx;
+}
+{% endhighlight %}
+
+### ChannelPipeline#remove
+
+从管道中删除特定的 ChannelHandler ，实际上删除的是 ChannelHandler 对应的 AbstractChannelHandlerContext 实例。删除成功后，需在工作线程调用 ChannelHandler#handlerRemoved 方法。
+
+同 #addFirst 一样，如果此时 channel 还没有注册工作线程，往 pendingHandlerCallbackHead 指向的链表中添加 remove 任务，待将来执行。
+
+{% highlight java %}
+public final ChannelHandler remove(String name) {
+    return remove(getContextOrDie(name)).handler();
+}
+
+private AbstractChannelHandlerContext remove(final AbstractChannelHandlerContext ctx) {
+    synchronized (this) {
+        remove0(ctx);
+
+        if (!registered) {
+            callHandlerCallbackLater(ctx, false);
+            return ctx;
+        }
+
+        EventExecutor executor = ctx.executor();
+        if (!executor.inEventLoop()) {
+            executor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    callHandlerRemoved0(ctx);
+                }
+            });
+            return ctx;
+        }
+    }
+    callHandlerRemoved0(ctx);
+    return ctx;
+}
+
+// 从链表中删除 ctx
+private static void remove0(AbstractChannelHandlerContext ctx) {
+    AbstractChannelHandlerContext prev = ctx.prev;
+    AbstractChannelHandlerContext next = ctx.next;
+    prev.next = next;
+    next.prev = prev;
+}
+
+private final class PendingHandlerRemovedTask extends PendingHandlerCallback {
+
+    PendingHandlerRemovedTask(AbstractChannelHandlerContext ctx) {
+        super(ctx);
+    }
+
+    @Override
+    public void run() {
+        callHandlerRemoved0(ctx);
+    }
+
+    @Override
+    void execute() {
+        EventExecutor executor = ctx.executor();
+        if (executor.inEventLoop()) {
+            // 直接执行
+            callHandlerRemoved0(ctx);
+        } else {
+            try {
+                // 向工作线程提交，异步执行
+                executor.execute(this);
+            } catch (RejectedExecutionException e) {
+                if (logger.isWarnEnabled()) {
+                    logger.warn(
+                            "Can't invoke handlerRemoved() as the EventExecutor {} rejected it," +
+                                    " removing handler {}.", executor, ctx.name(), e);
+                }
+                // remove0(...) was call before so just call AbstractChannelHandlerContext.setRemoved().
+                ctx.setRemoved();
+            }
+        }
+    }
 }
 {% endhighlight %}
 
