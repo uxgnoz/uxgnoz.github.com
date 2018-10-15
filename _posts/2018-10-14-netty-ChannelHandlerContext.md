@@ -11,11 +11,11 @@ layout: posts
 
 ChannelHandlerContext 继承自 ChannelInboundInvoker 和 ChannelOutboundInvoker。
 
-> ChannelHandlerContext，ChannelPipeline 和 Channel 存在很多方法签名重叠，因此 Maurer 提炼出了ChannelInboundInvoker 和 ChannelOutboundInvoker 2 个接口，它们的名称，个人认为值得商榷。
+> ChannelHandlerContext ， ChannelPipeline 和 Channel 存在很多方法签名重叠，因此 Maurer 提炼出了 ChannelInboundInvoker 和 ChannelOutboundInvoker 2 个接口。 ChannelInboundInvoker 负责处理输入事件， ChannelOutboundInvoker 处理输出事件，因此它们事件传播方向上是相反的。
 
-ChannelHandler 可以通过 ChannelHandlerContext 和它所属的管道及管道上其他 ChannelHandler 互动。ChannelHandler 可以动态修改管道的属性，也可以给紧靠着它的下一个 ChannelHandler 发送通知。
+ChannelHandler 可以通过 ChannelHandlerContext 和它所属的管道及管道上其他 ChannelHandler 互动。ChannelHandler 可以动态修改管道的属性，也可以给紧靠着它的下一个（上一个） ChannelHandler 发送通知。
 
-ChannelHandlerContext 提供了 如下 9 中通知方法，它们继承自 ChannelInboundInvoker。
+下面的 9 种通知方法，它们继承自 ChannelInboundInvoker。
 
 {% highlight java %}
 ChannelHandlerContext fireChannelRegistered();
@@ -37,7 +37,7 @@ ChannelHandlerContext fireChannelReadComplete();
 ChannelHandlerContext fireChannelWritabilityChanged();
 {% endhighlight %}
 
-ChannelOutboundInvoker 中的方法可就多了，分为如下几类：
+ChannelOutboundInvoker 中的方法可就多了，分为如下 3 类：
 
 * 连接类
 * 读写类
