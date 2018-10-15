@@ -76,7 +76,9 @@ private EventExecutor childExecutor(EventExecutorGroup group) {
 
 ### ChannelPipeline#addFirst
 
-新建传入参数 ChannelHandler 的 AbstractChannelHandlerContext 实例 newCtx，并插入到链表的头部。
+新建传入参数 ChannelHandler 的 AbstractChannelHandlerContext 实例 newCtx，并插入到链表的头部。插入成功后，需要在相应的工作线程调用 ChannelHandler#handlerAdded 方法。
+
+如果此时 channel 尚未注册到相应的工作线程（event loop），则调用方法 $callHandlerCallbackLater() 往异步任务队列中添加任务，等 channel 注册工作线程成功后，触发 ChannelPipeline#callHandlerAddedForAllHandlers 异步执行ChannelHandler#handlerAdded 方法 。
 
 {% highlight java %}
 public final ChannelPipeline addFirst(String name, ChannelHandler handler) {
@@ -95,9 +97,9 @@ public final ChannelPipeline addFirst(EventExecutorGroup group, String name, Cha
         // 往双向链表的头部插入新创建的 AbstractChannelHandlerContext 实例
         addFirst0(newCtx);
 
-        // registered 为 false 说明 channel 还没有 注册到 eventloop，
+        // registered 为 false 说明 channel 还没有 注册到工作线程，
         // 我们设置新的 AbstractChannelHandlerContext 实例状态为『未就绪』，
-        // 同时添加一个异步任务，当 channel 注册成功时，去调用 ChannelHandler#handlerAdded 方法
+        // 同时添加一个异步任务，当 channel 注册成功时，最终去调用 ChannelHandler#handlerAdded 方法
         if (!registered) {
             newCtx.setAddPending();
             callHandlerCallbackLater(newCtx, true);
@@ -105,9 +107,12 @@ public final ChannelPipeline addFirst(EventExecutorGroup group, String name, Cha
         }
 
         // registered 为 true
+        // 获取 newCtx 的工作线程，如果 newCtx 自己没有工作线程，则使用关联的 channel 注册的工作线程
         EventExecutor executor = newCtx.executor();
         if (!executor.inEventLoop()) {
+            // 设置 newCtx 状态 『未就绪』
             newCtx.setAddPending();
+            // 工作线程异步调用 ChannelHandler#handlerAdded
             executor.execute(new Runnable() {
                 @Override
                 public void run() {
@@ -117,6 +122,8 @@ public final ChannelPipeline addFirst(EventExecutorGroup group, String name, Cha
             return this;
         }
     }
+
+    // 当前处于工作线程，直接调用 ChannelHandler#handlerAdded
     callHandlerAdded0(newCtx);
     return this;
 }
@@ -170,7 +177,7 @@ private void callHandlerAdded0(final AbstractChannelHandlerContext ctx) {
 }
 {% endhighlight %}
 
-方法 $callHandlerCallbackLater 往 pendingHandlerCallbackHead 为头指针的单链表的表尾插入异步任务。任务分为 AbstractChannelHandlerContext 添加任务和删除任务，最终都是要在工作线程中去调用当前 ctx 里面的 ChannelHandler#handlerAdded 或者 ChannelHandler#handlerRemoved 方法。
+方法 $callHandlerCallbackLater 往 pendingHandlerCallbackHead 为头指针的单链表的表尾插入异步任务。任务分为 AbstractChannelHandlerContext 添加任务和删除任务，最终都是要在 ctx 自己的工作线程中去调用它关联的 ChannelHandler#handlerAdded 或者 ChannelHandler#handlerRemoved 方法。
 
 {% highlight java %}
 /**
