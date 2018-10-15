@@ -76,7 +76,7 @@ private EventExecutor childExecutor(EventExecutorGroup group) {
 
 ### ChannelPipeline#addFirst
 
-新建传入参数 ChannelHandler 的 AbstractChannelHandlerContext 实例 newCtx，并插入到链表的头部。插入成功后，需要在相应的工作线程调用 ChannelHandler#handlerAdded 方法。
+创建传入参数 ChannelHandler 的 AbstractChannelHandlerContext 实例 newCtx，并插入到链表表头 head 之后。插入成功后，需要在相应的工作线程调用 ChannelHandler#handlerAdded 方法。
 
 如果此时 channel 尚未注册到相应的工作线程（event loop），则调用方法 $callHandlerCallbackLater() 往异步任务队列中添加任务，等 channel 注册工作线程成功后，触发 ChannelPipeline#callHandlerAddedForAllHandlers 异步执行ChannelHandler#handlerAdded 方法 。
 
@@ -133,7 +133,7 @@ private AbstractChannelHandlerContext newContext(EventExecutorGroup group, Strin
     return new DefaultChannelHandlerContext(this, childExecutor(group), name, handler);
 }
 
-// 在双链表的表头插入 newCtx
+// 在双链表的表头 head 之后插入 newCtx
 private void addFirst0(AbstractChannelHandlerContext newCtx) {
     AbstractChannelHandlerContext nextCtx = head.next;
     newCtx.prev = head;
@@ -235,6 +235,21 @@ private final class PendingHandlerAddedTask extends PendingHandlerCallback {
             }
         }
     }
+}
+{% endhighlight %}
+
+### ChannelPipeline#addLast
+
+逻辑和 #addFirst 类似。
+
+{% highlight java %}
+// 在链表表尾 tail 之前插入 newCtx
+private void addLast0(AbstractChannelHandlerContext newCtx) {
+    AbstractChannelHandlerContext prev = tail.prev;
+    newCtx.prev = prev;
+    newCtx.next = tail;
+    prev.next = newCtx;
+    tail.prev = newCtx;
 }
 {% endhighlight %}
 
