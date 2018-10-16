@@ -76,7 +76,7 @@ private EventExecutor childExecutor(EventExecutorGroup group) {
 
 ### ChannelPipeline#addFirst
 
-创建传入参数 ChannelHandler 的 AbstractChannelHandlerContext 实例 newCtx，并插入到链表表头 head 之后。插入成功后，需要在相应的工作线程调用 ChannelHandler#handlerAdded 方法。
+ChannelPipeline#addFirst 创建传入参数 ChannelHandler 的 AbstractChannelHandlerContext 实例 newCtx，并插入到链表表头 head 之后。插入成功后，需要在相应的工作线程调用 ChannelHandler#handlerAdded 方法。
 
 如果此时 channel 尚未注册到相应的工作线程（event loop），则调用方法 $callHandlerCallbackLater() 往异步任务队列中添加任务，等 channel 注册工作线程成功后，触发 ChannelPipeline#callHandlerAddedForAllHandlers 异步执行ChannelHandler#handlerAdded 方法 。
 
@@ -361,15 +361,83 @@ private final class PendingHandlerRemovedTask extends PendingHandlerCallback {
 }
 {% endhighlight %}
 
+### ChannelPipeline#replace
+
+删除旧的 ChannelHander ， 插入新的 ChannelHandler。
+
+> 要保证 ChannelHandler#handlerAdded 在 ChannelHandler#handlerRemoved 之前调用。因为 ChannelHandler#handlerRemoved 可能会触发 ChannelHandler#channelRead 和 ChannelHandler#flush 方法，这些方法必须在新的 ChannelHandler#handlerAdded 调用之后才能执行。
+
+{% highlight java %}
+private ChannelHandler replace(
+        final AbstractChannelHandlerContext ctx, String newName, ChannelHandler newHandler) {
+    assert ctx != head && ctx != tail;
+
+    final AbstractChannelHandlerContext newCtx;
+    synchronized (this) {
+        // 此处省略部分雷同代码
+
+        newCtx = newContext(ctx.executor, newName, newHandler);
+        // 执行链表替换操作
+        replace0(ctx, newCtx);
+
+        if (!registered) {
+            callHandlerCallbackLater(newCtx, true);
+            callHandlerCallbackLater(ctx, false);
+            return ctx.handler();
+        }
+
+        EventExecutor executor = ctx.executor();
+        if (!executor.inEventLoop()) {
+            executor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    callHandlerAdded0(newCtx);
+                    callHandlerRemoved0(ctx);
+                }
+            });
+            return ctx.handler();
+        }
+    }
+
+    callHandlerAdded0(newCtx);
+    callHandlerRemoved0(ctx);
+    return ctx.handler();
+}
+{% endhighlight %}
+
 ## ChannelInboundInvoker api
+
+ChannelPipeline#fireChannelRegistered 方法直接调用 AbstractChannelHandlerContext#invokeChannelRegistered ，传入的参数为*表头节点*。其他入站类方法类似。
+
+ChannelHandlerContext 分析见 [Netty 之 ChannelHandler 上下文 ChannelHandlerContext](http://anyteam.me/netty-ChannelHandlerContext/) 。
+
+{% highlight java %}
+public final ChannelPipeline fireChannelRegistered() {
+    AbstractChannelHandlerContext.invokeChannelRegistered(head);
+    return this;
+}
+{% endhighlight %}
 
 ## ChannelOutboundInvoker api
 
-## 其他类
+ChannelPipeline#bind 从链表的尾部开始调用 ChannelHandlerContext#bind 方法。其他出站类方法类似。
 
-
-
+ChannelHandlerContext 分析见 [Netty 之 ChannelHandler 上下文 ChannelHandlerContext](http://anyteam.me/netty-ChannelHandlerContext/) 。
 
 {% highlight java %}
-
+public final ChannelFuture bind(SocketAddress localAddress) {
+    return tail.bind(localAddress);
+}
 {% endhighlight %}
+
+## 其他类
+
+方法 #onUnhandledInboundXXX 处理没有被管道中的 ChannelHandler 处理的事件，要么做资源释放，要么为空方法。
+
+## 表头表尾
+
+HeadContext 为管道的表头节点，同时实现了 ChannelInboundHandler 和 ChannnelOutboundHandler。作为 ChannelInboundHandler ，它负责向后传递入站事件。作为 ChannnelOutboundHandler ，它负责利用 Channel@Unsafe 执行具体的出站事件，如数据发送，连接对端，绑定端口等等。
+
+TailContext 为管道尾部节点，同时实现了 ChannelInboundHandler 接口，它负责调用 ChannelPipeline#onUnhandledInboundXXX 方法消化未处理事件。
+
+代码略。
