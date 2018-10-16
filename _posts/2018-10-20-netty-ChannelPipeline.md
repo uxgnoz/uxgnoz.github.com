@@ -438,6 +438,6 @@ public final ChannelFuture bind(SocketAddress localAddress) {
 
 HeadContext 为管道的表头节点，同时实现了 ChannelInboundHandler 和 ChannnelOutboundHandler。作为 ChannelInboundHandler ，它负责向后传递入站事件。作为 ChannnelOutboundHandler ，它负责利用 Channel@Unsafe 执行具体的出站事件，如数据发送，连接对端，绑定端口等等。
 
-TailContext 为管道尾部节点，同时实现了 ChannelInboundHandler 接口，它负责调用 ChannelPipeline#onUnhandledInboundXXX 方法消化未处理事件。
+TailContext 为管道尾部节点，同时实现了 ChannelInboundHandler 接口，它负责调用 ChannelPipeline#onUnhandledInboundXXX 方法消化管道中未处理事件。
 
 代码略。
