@@ -209,17 +209,14 @@ private void callHandlerCallbackLater(AbstractChannelHandlerContext ctx, boolean
 }
 
 private final class PendingHandlerAddedTask extends PendingHandlerCallback {
-
     PendingHandlerAddedTask(AbstractChannelHandlerContext ctx) {
         super(ctx);
     }
 
-    @Override
     public void run() {
         callHandlerAdded0(ctx);
     }
 
-    @Override
     void execute() {
         EventExecutor executor = ctx.executor();
 
@@ -327,17 +324,14 @@ private static void remove0(AbstractChannelHandlerContext ctx) {
 }
 
 private final class PendingHandlerRemovedTask extends PendingHandlerCallback {
-
     PendingHandlerRemovedTask(AbstractChannelHandlerContext ctx) {
         super(ctx);
     }
 
-    @Override
     public void run() {
         callHandlerRemoved0(ctx);
     }
 
-    @Override
     void execute() {
         EventExecutor executor = ctx.executor();
         if (executor.inEventLoop()) {
