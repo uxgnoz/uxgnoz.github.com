@@ -233,7 +233,40 @@ private void removeEntry(Entry e) {
 
 ## ChannelOutboundBuffer#remove(Throwable cause)
 
-ChannelOutboundBuffer#remove(Throwable cause) 基本逻辑跟 ChannelOutboundBuffer#remove一致，除了设置 Entry 的 promise 为 fail。代码略。
+ChannelOutboundBuffer#remove(Throwable cause) 基本逻辑跟 ChannelOutboundBuffer#remove一致，除了设置 Entry 的 promise 为 fail。
+
+{% highlight java %}
+public boolean remove(Throwable cause) {
+    return remove0(cause, true);
+}
+
+private boolean remove0(Throwable cause, boolean notifyWritability) {
+    Entry e = flushedEntry;
+    if (e == null) {
+        clearNioBuffers();
+        return false;
+    }
+    Object msg = e.msg;
+
+    ChannelPromise promise = e.promise;
+    int size = e.pendingSize;
+
+    removeEntry(e);
+
+    if (!e.cancelled) {
+        // only release message, fail and decrement if it was not canceled before.
+        ReferenceCountUtil.safeRelease(msg);
+
+        safeFail(promise, cause);
+        decrementPendingOutboundBytes(size, false, notifyWritability);
+    }
+
+    // recycle the entry
+    e.recycle();
+
+    return true;
+}
+{% endhighlight %}
 
 ------
 
@@ -288,7 +321,7 @@ nioBufferCount 为数组大小，而 nioBufferSize 数组中的所有待发送�
 
 maxCount 为 ByteBufer[] 最大长度，而 maxBytes 为 ByteBufer[] 中数据的数据总量最大值。由于 maxCount 和 maxBytes 的存在，很多时候只能返回区间  [flushedEntry, unflushedEntry) 上的一部分数据，甚至某个 Entry 的一部分数据。
 
-> 正如代码注释中所写，部分操作系统的 writeX() 系统调用最大只能允许 Integer.MAX_VALUE 字节的数据写入。
+> 部分操作系统的 writeX() 系统调用最大只能允许 Integer.MAX_VALUE 字节的数据写入。
 
 {% highlight java %}
 public ByteBuffer[] nioBuffers(int maxCount, long maxBytes) {
@@ -306,18 +339,8 @@ public ByteBuffer[] nioBuffers(int maxCount, long maxBytes) {
             final int readableBytes = buf.writerIndex() - readerIndex;
 
             if (readableBytes > 0) {
+                // 部分操作系统的 writeX() 系统调用最大只能允许 Integer.MAX_VALUE 字节的数据写入
                 if (maxBytes - readableBytes < nioBufferSize && nioBufferCount != 0) {
-                    // If the nioBufferSize + readableBytes will overflow maxBytes, and there is at least one entry
-                    // we stop populate the ByteBuffer array. This is done for 2 reasons:
-                    // 1. bsd/osx don't allow to write more bytes then Integer.MAX_VALUE with one writev(...) call
-                    // and so will return 'EINVAL', which will raise an IOException. On Linux it may work depending
-                    // on the architecture and kernel but to be safe we also enforce the limit here.
-                    // 2. There is no sense in putting more data in the array than is likely to be accepted by the
-                    // OS.
-                    //
-                    // See also:
-                    // - https://www.freebsd.org/cgi/man.cgi?query=write&sektion=2
-                    // - http://linux.die.net/man/2/writev
                     break;
                 }
                 nioBufferSize += readableBytes;
@@ -370,3 +393,25 @@ public ByteBuffer[] nioBuffers(int maxCount, long maxBytes) {
 }
 {% endhighlight %}
 
+## ChannelOutboundBuffer#failFlushed
+
+删除区间 [flushedEntry, unflushedEntry) 上的 Entry ，设置 Entry 的 promise 为失败。
+
+{% highlight java %}
+void failFlushed(Throwable cause, boolean notify) {
+    if (inFail) {
+        return;
+    }
+
+    try {
+        inFail = true;
+        for (;;) {
+            if (!remove0(cause, notify)) {
+                break;
+            }
+        }
+    } finally {
+        inFail = false;
+    }
+}
+{% endhighlight %}
