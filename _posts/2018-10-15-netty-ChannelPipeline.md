@@ -409,7 +409,7 @@ private ChannelHandler replace(
 
 ChannelPipeline#fireChannelRegistered 方法直接调用 AbstractChannelHandlerContext#invokeChannelRegistered ，传入的参数为*表头节点*。其他入站类方法类似。
 
-ChannelHandlerContext 分析见 [Netty 之 ChannelHandler 上下文 ChannelHandlerContext](http://anyteam.me/netty-ChannelHandlerContext/) 。
+ChannelHandlerContext 分析见 [Netty 之 ChannelHandler 上下文 ChannelHandlerContext](/netty-ChannelHandlerContext/) 。
 
 {% highlight java %}
 public final ChannelPipeline fireChannelRegistered() {
@@ -422,7 +422,7 @@ public final ChannelPipeline fireChannelRegistered() {
 
 ChannelPipeline#bind 从链表的尾部开始调用 ChannelHandlerContext#bind 方法。其他出站类方法类似。
 
-ChannelHandlerContext 分析见 [Netty 之 ChannelHandler 上下文 ChannelHandlerContext](http://anyteam.me/netty-ChannelHandlerContext/) 。
+ChannelHandlerContext 分析见 [Netty 之 ChannelHandler 上下文 ChannelHandlerContext](/netty-ChannelHandlerContext/) 。
 
 {% highlight java %}
 public final ChannelFuture bind(SocketAddress localAddress) {
