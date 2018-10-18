@@ -415,3 +415,34 @@ void failFlushed(Throwable cause, boolean notify) {
     }
 }
 {% endhighlight %}
+## ChannelOutboundBuffer#bytesBeforeWritable
+
+ChannelOutboundBuffer#isWritable 返回 false 时，totalPendingSize 高于 channel 配置的缓冲区低水位线字节数，否则返回 0。
+
+> 大白话：`写开关`关闭的情况下，需要从缓冲区拿掉多少字节，才能继续写
+
+{% highlight java %}
+public long bytesBeforeWritable() {
+    long bytes = totalPendingSize - channel.config().getWriteBufferLowWaterMark();
+    if (bytes > 0) {
+        return isWritable() ? 0 : bytes;
+    }
+    return 0;
+}
+{% endhighlight %}
+
+## ChannelOutboundBuffer#bytesBeforeUnwritable
+
+ChannelOutboundBuffer#isWritable 返回 true 时，totalPendingSize 低于 channel 配置的缓冲区高水位线字节数，否则返回 0。
+
+> 大白话：`写开关`打开的情况下，还能向缓冲区写多少字节
+
+{% highlight java %}
+public long bytesBeforeUnwritable() {
+    long bytes = channel.config().getWriteBufferHighWaterMark() - totalPendingSize;
+    if (bytes > 0) {
+        return isWritable() ? bytes : 0;
+    }
+    return 0;
+}
+{% endhighlight %}
