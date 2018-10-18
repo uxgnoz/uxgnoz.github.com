@@ -428,6 +428,42 @@ public final ChannelFuture bind(SocketAddress localAddress) {
 
 方法 #onUnhandledInboundXXX 处理没有被管道中的 ChannelHandler 处理的事件，要么做资源释放，要么为空方法。
 
+### ChannelPipeline#invokeHandlerAddedIfNeeded
+
+channel 在第一次注册工作线程的时候要调用 ChannelPipeline#invokeHandlerAddedIfNeeded，依次执行 pendingHandlerCallbackHead 指向链表中 ChannelHandler#handlerAdded 。
+
+> 确保之前添加的所有 ChannelHandler 在处理其他事件之前先调用 ChannelHandler#handlerAdded 方法。
+
+{% highlight java %}
+final void invokeHandlerAddedIfNeeded() {
+    assert channel.eventLoop().inEventLoop();
+    if (firstRegistration) {
+        firstRegistration = false;
+        callHandlerAddedForAllHandlers();
+    }
+}
+
+private void callHandlerAddedForAllHandlers() {
+    final PendingHandlerCallback pendingHandlerCallbackHead;
+    synchronized (this) {
+        assert !registered;
+        // This Channel itself was registered.
+        registered = true;
+
+        pendingHandlerCallbackHead = this.pendingHandlerCallbackHead;
+        // Null out so it can be GC'ed.
+        this.pendingHandlerCallbackHead = null;
+    }
+
+    // 依次执行 pendingHandlerCallbackHead 指向链表中的任务
+    PendingHandlerCallback task = pendingHandlerCallbackHead;
+    while (task != null) {
+        task.execute();
+        task = task.next;
+    }
+}
+{% endhighlight %}
+
 ## 表头表尾
 
 HeadContext 为管道的表头节点，同时实现了 ChannelInboundHandler 和 ChannnelOutboundHandler。作为 ChannelInboundHandler ，它负责向后传递入站事件。作为 ChannnelOutboundHandler ，它负责利用 Channel@Unsafe 执行具体的出站事件，如数据发送，连接对端，绑定端口等等。
