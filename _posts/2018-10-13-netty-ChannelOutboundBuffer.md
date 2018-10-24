@@ -1,6 +1,7 @@
 ---
 title: Netty 之发送缓冲区 ChannelOutboundBuffer
 layout: posts
+category: netty
 ---
 
 # Netty 之发送缓冲区 ChannelOutboundBuffer
@@ -395,7 +396,9 @@ public ByteBuffer[] nioBuffers(int maxCount, long maxBytes) {
 
 ## ChannelOutboundBuffer#failFlushed
 
-删除区间 [flushedEntry, unflushedEntry) 上的 Entry ，设置 Entry 的 promise 为失败。
+删除区间 [flushedEntry, unflushedEntry) 上的 Entry ，并设置 Entry 的 promise 为失败。
+
+参数 notify 指定其他条件满足的情况下，是否需要出发 WritabilityChanged 事件。 
 
 {% highlight java %}
 void failFlushed(Throwable cause, boolean notify) {
