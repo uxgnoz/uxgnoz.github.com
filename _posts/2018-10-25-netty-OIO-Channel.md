@@ -10,22 +10,24 @@ layout: posts
 ## OIOServerSocketChannel
 
 OIOServerSocketChannel 的继承树如下：
-
-    AbstractChannel 
-        <- AbstractOioChannel 
-        <- AbstractOioMessageChannel 
-        <- OioServerSocketChannel
+{% highlight java %}
+AbstractChannel 
+    <- AbstractOioChannel 
+    <- AbstractOioMessageChannel 
+    <- OioServerSocketChannel
+{% endhighlight %}
 
 ## OioSocketChannel
 
 OioSocketChannel 的继承树如下：
 
+{% highlight java %}
 AbstractChannel 
     <- AbstractOioChannel 
     <- AbstractOioByteChannel 
     <- OioByteStreamChannel 
     <- OioSocketChannel
-
+{% endhighlight %}
 
 
 {% highlight java %}
