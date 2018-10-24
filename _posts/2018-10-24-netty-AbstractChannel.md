@@ -237,7 +237,7 @@ private void invokeLater(Runnable task) {
 绑定流程：
 
 1. 设置 promise 为不可撤销，失败则返回；
-2. 执行子类具体绑定工作；
+2. 执行子类 #doBind 实现具体绑定工作；
 3. 绑定成功，异步向管道中发出 channel `激活`事件；
 4. 设置 promise 结果为成功。
 
@@ -275,7 +275,9 @@ public final void bind(final SocketAddress localAddress, final ChannelPromise pr
 
 ### AbstractUnsafe#write
 
-向出站缓冲区 ChannelOutboundBuffer 中添加一条消息。
+向出站缓冲区 ChannelOutboundBuffer 末尾添加一条消息。
+
+ChannelOutboundBuffer 见 [Netty 之发送缓冲区 ChannelOutboundBuffer](/netty-ChannelOutboundBuffer/)。
 
 {% highlight java %}
 public final void write(Object msg, ChannelPromise promise) {
@@ -308,9 +310,11 @@ public final void write(Object msg, ChannelPromise promise) {
 
 ### AbstractUnsafe#flush
 
-在出站缓冲区 ChannelOutboundBuffer 中标记要写出数据的范围 [flushedEntry, unflushedEntry)，调用具体实现的 #doWrite 把数据写出。
+在出站缓冲区 ChannelOutboundBuffer 中标记要写出数据的范围 [flushedEntry, unflushedEntry)，调用具体实现的 #doWrite 把数据真正写出。
 
 inFlush0 为 true 说明当前处于数据写出过程，防止重复调用。
+
+> 在 AbstractChannel 的某些具体实现中，方法 #flush0 能够被用户线程调用，可能会和工作线程中调用的 #flush 并发执行。 
 
 {% highlight java %}
 public final void flush() {
