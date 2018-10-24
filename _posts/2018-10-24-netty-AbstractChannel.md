@@ -64,13 +64,13 @@ AbstractUnsafe#register 主要功能为 channel 注册工作线程（EventLoop�
 
 注册流程：
 
-    1. 设置工作线程;
-    2. 调用 #doRegister 执行具体子类附加注册功能；
-    3. 调用管道中所有 ChannelHandler#handlerAdded 方法；
-    4. 设置 promise 结果为成功；
-    5. 向管道中发送 channel `注册`事件；
-    6. 如果是 channel 的首次注册，向管道中发送 channel `激活`事件；
-    7. 如果是非首次注册，且 channel 设置了自动读取，则调用 #doBeginRead 发起数据读取操作。
+1. 设置工作线程;
+2. 调用 #doRegister 执行具体子类附加注册功能；
+3. 调用管道中所有 ChannelHandler#handlerAdded 方法；
+4. 设置 promise 结果为成功；
+5. 向管道中发送 channel `注册`事件；
+6. 如果 channel 是首次注册，向管道中发送 channel `激活`事件；
+7. 如果 channel 是非首次注册，且 channel 设置了自动读取，则调用 #doBeginRead 发起数据读取操作。
 
 {% highlight java %}
 public final void register(EventLoop eventLoop, final ChannelPromise promise) {
@@ -164,16 +164,20 @@ public final void beginRead() {
 }
 {% endhighlight %}
 
+> #invokeLater 打包要执行的任务到工作线程异步执行。
+
 ### AbstractUnsafe#deregister
 
 channel 注销工作线程（EventLoop）。注销工作需要等到当前工作线程中的任务执行结束才能开始，因此需要把注销任务打包提交到工作线程，异步调用。
 
 注销流程：
 
-1. 调用子类实现 #doDeregister 处理具体的注销工作；
-2. 如果是由关闭 channel 导致的注销，也就是 fireChannelInactive 为 TRUE，则向管道中发送 channel `失活`事件；
-3. 如果此时还处于注册状态，则修改状态为`注销`，同时向管道中发送 channel `注销`事件；
-4. 设置 promise 结果为成功。
+1. 设置 promise 为不可撤销，失败则返回；
+2. 如果 channel 未注册，则直接返回；
+3. 调用子类实现 #doDeregister 处理具体的注销工作；
+4. 如果是由关闭 channel 导致的注销，也就是 fireChannelInactive 为 TRUE，则向管道中发送 channel `失活`事件；
+5. 如果此时还处于注册状态，则修改状态为`注销`，同时向管道中发送 channel `注销`事件；
+6. 设置 promise 结果为成功。
 
 {% highlight java %}
 public final void deregister(final ChannelPromise promise) {
@@ -188,6 +192,7 @@ private void deregister(final ChannelPromise promise, final boolean fireChannelI
     }
 
     if (!registered) {
+        // 如果 channel 未注册，则直接返回；
         safeSetSuccess(promise);
         return;
     }
@@ -384,9 +389,9 @@ protected void flush0() {
 7. 关闭 ChannelOutboundBuffer；
 8. 调用 #deregister `注销`通道。
 
-ChannelOutboundBuffer 的分析见[Netty 之发送缓冲区 ChannelOutboundBuffer](/netty-ChannelOutboundBuffer)。
+ChannelOutboundBuffer 的分析见 [Netty 之发送缓冲区 ChannelOutboundBuffer](/netty-ChannelOutboundBuffer)。
 
-> 第 6 、第 7 步需要放到 channel 自己的工作线程中执行。
+> 第 6、7 步需要放到 channel 自己的工作线程中执行。
 
 {% highlight java %}
 public final void close(final ChannelPromise promise) {
@@ -484,7 +489,7 @@ protected abstract void doClose() throws Exception;
 
 1. 设置 promise 为不可撤销，失败则返回；
 2. 调用子类实现 #doDisconnect 执行具体断连逻辑；
-3. 断连成功则打包触发 ChannelInactive 任务到工作线程；
+3. 断连成功则打包触发管道事件 ChannelInactive 任务到工作线程；
 4. 设置 promise 成功；
 5. 关闭通道。
 
