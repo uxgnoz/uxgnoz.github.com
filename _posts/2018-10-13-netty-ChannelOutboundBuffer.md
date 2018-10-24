@@ -418,6 +418,7 @@ void failFlushed(Throwable cause, boolean notify) {
     }
 }
 {% endhighlight %}
+
 ## ChannelOutboundBuffer#bytesBeforeWritable
 
 ChannelOutboundBuffer#isWritable 返回 false 时，totalPendingSize 高于 channel 配置的缓冲区低水位线字节数，否则返回 0。
