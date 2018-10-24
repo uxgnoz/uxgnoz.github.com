@@ -11,7 +11,7 @@ layout: posts
 
 AbstractChannel 是接口 Channel 的抽象实现类。每个 Channel 都会有一个实 Unsafe 实例，它负责执行具体的 IO 操作。
 
-在创建一个 Channel 的时候，必须要初始化它的 id、Unsafe 实例 和 ChannelPipeline。 
+在创建一个 Channel 的时候，必须要初始化它的 ChannelId、Unsafe 实例和 ChannelPipeline。 
 
 > AbstractChannel#newUnsafe 为抽象方法，留给具体的子类去实现。
 
@@ -56,7 +56,7 @@ public ChannelFuture connect(SocketAddress remoteAddress) {
 
 > `出站`事件这里只是说事件流向，并非一定要从 tail 开始，通常我们数据发送时会调用 ctx#write 方法，这时数据从当前 ctx 流向 head 。
 
-每个 Unsafe 实例都有自己的数据发送缓冲区 outboundBuffer。 ChannelOutboundBuffer 见[Netty 之发送缓冲区 ChannelOutboundBuffer](/ChannelOutboundBuffer/)。
+每个 Unsafe 实例都有自己的数据发送缓冲区 outboundBuffer。 ChannelOutboundBuffer 见 [Netty 之发送缓冲区 ChannelOutboundBuffer](/netty-ChannelOutboundBuffer/)。
 
 ### AbstractUnsafe#register
 
@@ -64,13 +64,13 @@ AbstractUnsafe#register 主要功能为 channel 注册工作线程（EventLoop�
 
 注册流程：
 
-1. 设置工作线程;
-2. 调用 #doRegister 执行具体子类附加注册功能；
-3. 调用管道中所有 ChannelHandler#handlerAdded 方法；
-4. 设置 promise 结果为成功；
-5. 向管道中发送 channel `注册`事件；
-6. 如果是 channel 的首次注册，向管道中发送 channel `激活`事件；
-7. 如果是非首次注册，且 channel 设置了自动读取，则调用 #doBeginRead 发起数据读取操作。
+    1. 设置工作线程;
+    2. 调用 #doRegister 执行具体子类附加注册功能；
+    3. 调用管道中所有 ChannelHandler#handlerAdded 方法；
+    4. 设置 promise 结果为成功；
+    5. 向管道中发送 channel `注册`事件；
+    6. 如果是 channel 的首次注册，向管道中发送 channel `激活`事件；
+    7. 如果是非首次注册，且 channel 设置了自动读取，则调用 #doBeginRead 发起数据读取操作。
 
 {% highlight java %}
 public final void register(EventLoop eventLoop, final ChannelPromise promise) {
