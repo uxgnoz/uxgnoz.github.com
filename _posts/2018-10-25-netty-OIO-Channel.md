@@ -11,10 +11,10 @@ layout: posts
 
 OIOServerSocketChannel 的继承树如下：
 
-AbstractChannel 
-    <- AbstractOioChannel 
-    <- AbstractOioMessageChannel 
-    <- OioServerSocketChannel
+    AbstractChannel 
+        <- AbstractOioChannel 
+        <- AbstractOioMessageChannel 
+        <- OioServerSocketChannel
 
 ## OioSocketChannel
 
