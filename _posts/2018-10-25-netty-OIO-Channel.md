@@ -1,9 +1,9 @@
 ---
-title: Netty 之通道 OIOXXXSocketChannel
+title: Netty 之通道 OIO 类 Channel
 layout: posts
 ---
 
-# Netty 之通道 OIOXXXSocketChannel
+# Netty 之通道 OIO 类 Channel
 
 ------
 
@@ -138,7 +138,7 @@ private final Runnable readTask = new Runnable() {
 
 ------
 
-## OIOServerSocketChannel
+## OioServerSocketChannel
 
 {% highlight java %}
 {% endhighlight %}
