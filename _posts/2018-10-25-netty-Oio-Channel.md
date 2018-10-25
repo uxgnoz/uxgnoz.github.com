@@ -1,9 +1,9 @@
 ---
-title: Netty 之通道 Oio 类 Channel
+title: Netty 之通道：同步阻塞 Channel
 layout: posts
 ---
 
-# Netty 之通道 Oio 类 Channel
+# Netty 之通道：同步阻塞 Channel
 
 ------
 
