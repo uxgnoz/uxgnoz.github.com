@@ -1,9 +1,9 @@
 ---
-title: Netty 之通道：同步阻塞 Channel
+title: Netty 之同步阻塞通道
 layout: posts
 ---
 
-# Netty 之通道：同步阻塞 Channel
+# Netty 之同步阻塞通道
 
 ------
 
