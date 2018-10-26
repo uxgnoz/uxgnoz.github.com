@@ -9,7 +9,7 @@ layout: posts
 
 ## AbstractOioChannel
 
-AbstractOioChannel 中实现了 OIO 的 Unsafe 类 DefaultOioUnsafe，补充实现了 AbstractUnsafe#connect 方法。执行连接的具体逻辑还是需要 AbstractOioChannel 不同子类自己去实现 #doConnect 方法。
+AbstractOioChannel 中的 Unsafe 实现类 DefaultOioUnsafe，补充实现了 AbstractUnsafe#connect 方法。执行连接的具体逻辑还是需要 AbstractOioChannel 不同子类自己去实现 #doConnect 方法。
 
 如果连接成功，往管道中发送 channel `激活`事件。
 
@@ -42,13 +42,6 @@ private final class DefaultOioUnsafe extends AbstractUnsafe {
         }
     }
 }
-
-private final Runnable readTask = new Runnable() {
-    @Override
-    public void run() {
-        doRead();
-    }
-};
 {% endhighlight %}
 
 不同的类型的 channel 会注册到不同类型的工作线程。这里 OIO 类 channel 的工作线程需要是 ThreadPerChannelEventLoop 类型或其子类型。
@@ -280,7 +273,7 @@ protected int doReadMessages(List<Object> buf) throws Exception {
 }
 {% endhighlight %}
 
-下面的几个方法都是直接操作底层的 java socket。very easy。
+下面的几个方法都是直接操作底层的 java socket。very easy。其他的几个客户端通道类的方法，直接抛出异常 UnsupportedOperationException。
 
 {% highlight java %}
 public boolean isOpen() {
@@ -300,13 +293,9 @@ protected void doClose() throws Exception {
 }
 {% endhighlight %}
 
-
-
-
 ------
 
 ## OioSocketChannel
-
 
 OioSocketChannel 的继承树如下：
 
