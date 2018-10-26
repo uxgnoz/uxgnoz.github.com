@@ -246,6 +246,7 @@ figure > pre {
   /* background-color: rgba(102, 128, 153, 0.0470588); */
   border-right: 1px solid #ccc;
   color: #999;
+  width: 30px;
 }
 
 .lineno {
