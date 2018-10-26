@@ -258,6 +258,43 @@ ol, ul {
   background-color: #333;
 }
 
+
+#post pre table {
+  width: 100%;
+}
+
+#post figure pre {
+  border-radius: 5px;
+  margin: 5px 5px 5px 5px;
+  background-color:rgba(102, 128, 153, 0.0470588);
+  line-height: 20px;
+  font-family: Courier, 'Microsoft Yahei', sans-serif;
+  word-wrap: break-word;  
+}
+
+#post figure tbody pre {
+  border-radius: 5px;
+  margin: 5px 5px 5px 5px;
+  background-color:rgba(102, 128, 153, 0.0470588);
+  line-height: 20px;
+  font-family: Courier, 'Microsoft Yahei', sans-serif;
+  word-wrap: break-word;  
+}
+
+#post figure tbody pre td {
+  border: 0px;
+  
+}
+
+.gutter .gl {
+  padding: 0px;
+}
+
+.lineno {
+  margin: 0px;
+  padding-left: 3px;
+}
+
 #related {
   margin-top: 2em;
 }
