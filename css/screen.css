@@ -210,8 +210,8 @@ ol, ul {
 }
 
 .rouge-table {
-    background-color: rgba(102, 128, 153, 0.0470588);
-    margin-left: 5px;
+    /* background-color: rgba(102, 128, 153, 0.0470588); */
+    /* margin-left: 5px; */
     width: 100%;
     border-radius: 5px;
     font-size: 13px;
@@ -226,6 +226,7 @@ figure > pre {
   border-radius: 5px;
   font-size: 13px;
   padding: 5px 5px 5px 10px;
+  line-height: 20px;
 }
 
 /* terminal */
@@ -240,37 +241,9 @@ figure > pre {
   background-color: #333;
 }
 
-
-/* #post pre table {
-  width: 100%;
-} */
-
-/* #post figure pre {
-  border-radius: 5px;
-  margin: 5px 5px 5px 5px;
-  background-color:rgba(102, 128, 153, 0.0470588);
-  line-height: 20px;
-  font-family: Courier, 'Microsoft Yahei', sans-serif;
-  word-wrap: break-word;  
-}
-
-#post figure tbody pre {
-  border-radius: 5px;
-  margin: 5px 5px 5px 5px;
-  background-color:rgba(102, 128, 153, 0.0470588);
-  line-height: 20px;
-  font-family: Courier, 'Microsoft Yahei', sans-serif;
-  word-wrap: break-word;  
-} */
-
-/* #post figure code table td {
-  border: 0px;
-
-} */
-
 .gutter {
   padding: 0px;
-  background-color: rgba(102, 128, 153, 0.0470588);
+  /* background-color: rgba(102, 128, 153, 0.0470588); */
   border-right: 1px solid #ccc;
   color: #999;
 }
