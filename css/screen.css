@@ -281,9 +281,9 @@ ol, ul {
   word-wrap: break-word;  
 }
 
-#post figure tbody pre td {
+#post figure pre td {
   border: 0px;
-  
+
 }
 
 .gutter .gl {
