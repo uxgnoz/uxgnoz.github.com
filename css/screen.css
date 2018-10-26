@@ -201,8 +201,6 @@ ol, ul {
 /*
 /*****************************************************************************/
 
-#post { }
-
   /* standard */
   
 #post strong {
@@ -211,7 +209,7 @@ ol, ul {
   /*color: darkblue;*/
 }
 
-#post pre {
+/* #post pre {
   /* border-left: 10px solid rgba(102, 128, 153, 1); */
   border-radius: 5px;
   margin: 5px 5px 5px 5px;
@@ -220,10 +218,10 @@ ol, ul {
   line-height: 20px;
   font-family: Courier, 'Microsoft Yahei', sans-serif;
   word-wrap: break-word;  
-}
+} */
 
 
-#post code {
+/* #post code {
   border: 1px solid #ddd;
   /*background-color: #f2f2f2;*/
   padding: 5px 5px 3px 6px;
@@ -232,9 +230,9 @@ ol, ul {
   font-weight: 600;
   margin-left: 5px;
   margin-right: 5px;
-}
+} */
 
-#post pre code {
+/* #post pre code {
   border: none;
   padding: 0;
   font-size: 13px;
@@ -244,7 +242,7 @@ ol, ul {
   font-weight: 600;
   margin-left: 0px;
   margin-right: 0px;
-}
+} */
 
 /* terminal */
 #post pre.terminal {
@@ -259,11 +257,11 @@ ol, ul {
 }
 
 
-#post pre table {
+/* #post pre table {
   width: 100%;
-}
+} */
 
-#post figure pre {
+/* #post figure pre {
   border-radius: 5px;
   margin: 5px 5px 5px 5px;
   background-color:rgba(102, 128, 153, 0.0470588);
@@ -279,12 +277,12 @@ ol, ul {
   line-height: 20px;
   font-family: Courier, 'Microsoft Yahei', sans-serif;
   word-wrap: break-word;  
-}
+} */
 
-#post figure pre td {
+/* #post figure code table td {
   border: 0px;
 
-}
+} */
 
 .gutter .gl {
   padding: 0px;
@@ -329,7 +327,7 @@ ol, ul {
 
 strike, linethru {text-decoration:line-through;} 
 
-#post #tbl table { width:100%; margin-bottom:2em; }
+/* #post #tbl table { width:100%; margin-bottom:2em; }
 #post #tbl table td { padding:0.5em; }
 #post #tbl table thead { background-color:#262626; color:#fff; font-weight:bold; }
 #post #tbl table thead a { text-decoration:none; color:#fff; }
@@ -339,7 +337,7 @@ strike, linethru {text-decoration:line-through;}
 #post #tbl.zebra tbody tr:nth-child(odd) {background: #fff}
 #post #tbl.ul tbody tr {border-bottom:1px solid #ccc;}
 #post #tbl.borders tbody tr {border-left:1px solid #ccc; border-bottom:1px solid #ccc;}
-#post #tbl.borders tbody td {border-right:1px solid #ccc;}
+#post #tbl.borders tbody td {border-right:1px solid #ccc;} */
 
 #post em {font-style:italic;}
 
@@ -353,7 +351,7 @@ hr {
   font-size: 13px;
   }
 
-table { 
+/* table { 
     padding: 0; 
     border-collapse:collapse;
     border-spacing:0;
@@ -381,7 +379,7 @@ td {
     background: #fff; 
     padding: 8px 12px 3px 12px; 
     border-left: 1px solid #aaaaaa; 
-} 
+}  */
 
 img {
   box-shadow: 0 0 1px #9797A6;
@@ -389,9 +387,4 @@ img {
   border: 0px;
   margin-top: 10px;
   margin-bottom: 5px;
-}
-
-.lineno {
-    margin-right: 10px;
-    color: #aaa;
 }
