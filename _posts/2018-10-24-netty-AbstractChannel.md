@@ -13,9 +13,8 @@ AbstractChannel 是接口 Channel 的抽象实现类。每个 Channel 都会有�
 
 在创建一个 Channel 的时候，必须要初始化它的 ChannelId、Unsafe 实例和 ChannelPipeline。 
 
-> AbstractChannel#newUnsafe 为抽象方法，留给具体的子类去实现。
-
-> parent 的值可以为 null。
+> * AbstractChannel#newUnsafe 为抽象方法，留给具体的子类去实现。
+> * parent 的值可以为 null。
 
 {% highlight java %}
 protected AbstractChannel(Channel parent) {
