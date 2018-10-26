@@ -219,40 +219,14 @@ ol, ul {
     line-height: 20px;
 }
 
-/* #post pre {
-  /* border-left: 10px solid rgba(102, 128, 153, 1); */
-  border-radius: 5px;
-  margin: 5px 5px 5px 5px;
-  background-color:rgba(102, 128, 153, 0.0470588);
-  padding: 5px 5px 5px 10px;
-  line-height: 20px;
-  font-family: Courier, 'Microsoft Yahei', sans-serif;
-  word-wrap: break-word;  
-} */
-
-
-/* #post code {
-  border: 1px solid #ddd;
-  /*background-color: #f2f2f2;*/
-  padding: 5px 5px 3px 6px;
-  font-family: 'Courier', 'Microsoft Yahei',  sans-serif;
-  border-radius: 3px;
-  font-weight: 600;
+figure > pre {
+  background-color: rgba(102, 128, 153, 0.0470588);
   margin-left: 5px;
-  margin-right: 5px;
-} */
-
-/* #post pre code {
-  border: none;
-  padding: 0;
+  width: 855px;
+  border-radius: 5px;
   font-size: 13px;
-  font-family: "Consolas", "Courier";
-  letter-spacing: 0px;
-  /*background-color: #f2f2f2;*/
-  font-weight: 600;
-  margin-left: 0px;
-  margin-right: 0px;
-} */
+  padding: 5px 5px 5px 10px;
+}
 
 /* terminal */
 #post pre.terminal {
