@@ -210,13 +210,7 @@ ol, ul {
 }
 
 .rouge-table {
-    /* background-color: rgba(102, 128, 153, 0.0470588); */
-    /* margin-left: 5px; */
     width: 100%;
-    border-radius: 5px;
-    font-size: 13px;
-    font-family: 'Courier', 'Microsoft Yahei', sans-serif;
-    line-height: 20px;
 }
 
 figure > pre {
@@ -227,6 +221,7 @@ figure > pre {
   font-size: 13px;
   padding: 5px 5px 5px 10px;
   line-height: 20px;
+  font-family: 'Courier', 'Microsoft Yahei', sans-serif;
 }
 
 /* terminal */
