@@ -114,10 +114,15 @@ ul.index_posts span {
   font-size: 13px;
 }
 
-
+.highlighter-rouge {
+  font-family: '宋体';
+  color: #f99157;
+  font-weight: bold;
+}
   
 ol, ul {
   margin-left: 40px;
+  margin-bottom: 15px;
 }  
 
 /*****************************************************************************/
