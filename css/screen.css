@@ -227,7 +227,7 @@ figure > pre {
   padding: 5px 5px 5px 10px;
   line-height: 20px;
   font-family: 'Courier', 'Microsoft Yahei', sans-serif;
-  overflow-x: scroll;
+  overflow-x: auto;
 }
 
 /* terminal */
