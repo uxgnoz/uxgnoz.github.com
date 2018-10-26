@@ -209,6 +209,16 @@ ol, ul {
   /*color: darkblue;*/
 }
 
+.rouge-table {
+    background-color: rgba(102, 128, 153, 0.0470588);
+    margin-left: 5px;
+    width: 100%;
+    border-radius: 5px;
+    font-size: 13px;
+    font-family: 'Courier', 'Microsoft Yahei', sans-serif;
+    line-height: 20px;
+}
+
 /* #post pre {
   /* border-left: 10px solid rgba(102, 128, 153, 1); */
   border-radius: 5px;
@@ -286,6 +296,9 @@ ol, ul {
 
 .gutter .gl {
   padding: 0px;
+  background-color: rgba(102, 128, 153, 0.0470588);
+  border-right: 1px solid #ccc;
+  color: #999;
 }
 
 .lineno {

@@ -2,6 +2,7 @@
 .highlight table pre { margin: 0; }
 .highlight, .highlight .w {
   color: #454545;
+  padding-right: 10px;
 }
 .highlight .err {
   color: #002b36;
