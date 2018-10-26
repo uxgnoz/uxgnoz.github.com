@@ -17,7 +17,7 @@ ChannelHandler 可以通过 ChannelHandlerContext 和它所属的管道及管道
 
 下面的 9 种通知方法，它们继承自 ChannelInboundInvoker。
 
-{% highlight java %}
+{% highlight java linenos %}
 ChannelHandlerContext fireChannelRegistered();
 
 ChannelHandlerContext fireChannelUnregistered();
@@ -53,7 +53,7 @@ Channel 注册到 EventLoop 时，触发 channelRegistered 事件，开始调用
 
 > 调用的方式有点特别，如果当前代码执行在工作线程，则直接调用，否则打包成任务，再添加到工作线程异步执行。
 
-{% highlight java %}
+{% highlight java linenos %}
 public ChannelHandlerContext fireChannelRegistered() {
     invokeChannelRegistered(findContextInbound());
     return this;
@@ -76,7 +76,7 @@ static void invokeChannelRegistered(final AbstractChannelHandlerContext next) {
 
 在 #invokeChannelRegistered 中，如果当前 ctx 的 ChannelHandler 准备就绪，那么直接调用它的 #channelRegistered 方法。否则继续往下一个 ChannelHandler 传播 channelRegistered 事件。
 
-{% highlight java %}
+{% highlight java linenos %}
 private void invokeChannelRegistered() {
     if (invokeHandler()) {
         try {
@@ -98,7 +98,7 @@ private boolean invokeHandler() {
 
 字段 inbound 指示当前 ctx 的 ChannelHandler 类型为 ChannelInboundHandler 。
 
-{% highlight java %}
+{% highlight java linenos %}
 private AbstractChannelHandlerContext findContextInbound() {
     AbstractChannelHandlerContext ctx = this;
     do {
@@ -121,7 +121,7 @@ ChannelInboundInvoker 中的其他 8 个方法实现类似，不再赘述。
 
 连接类包括如下几个方法：
 
-{% highlight java %}
+{% highlight java linenos %}
 ChannelFuture bind(SocketAddress localAddress);
 ChannelFuture bind(SocketAddress localAddress, ChannelPromise promise);
 
@@ -146,7 +146,7 @@ ChannelFuture deregister(ChannelPromise promise);
 
 方法 #findContextOutbound 从当前 ctx 开始，查找下一个 outbound 为 true 的 ctx。最终还是要调用 ctx 的 ChannelOutboundHandler#bind 方法。
 
-{% highlight java %}
+{% highlight java linenos %}
 public ChannelFuture bind(SocketAddress localAddress) {
     return bind(localAddress, newPromise());
 }
@@ -192,7 +192,7 @@ private void invokeBind(SocketAddress localAddress, ChannelPromise promise) {
 
 字段 outbound 指示当前 ctx 的 ChannelHandler 类型为 ChannelOutboundHandler 。
 
-{% highlight java %}
+{% highlight java linenos %}
 private AbstractChannelHandlerContext findContextOutbound() {
     AbstractChannelHandlerContext ctx = this;
     do {
@@ -208,7 +208,7 @@ private AbstractChannelHandlerContext findContextOutbound() {
 
 ## 读写类
 
-{% highlight java %}
+{% highlight java linenos %}
 ChannelOutboundInvoker read();
 
 ChannelFuture write(Object msg);
@@ -230,7 +230,7 @@ ChannelFuture writeAndFlush(Object msg, ChannelPromise promise);
 
 不管中间过程咋样，最终还是去调用 ChannelOutboundHandler#write，#flush 方法。
 
-{% highlight java %}
+{% highlight java linenos %}
 private void write(Object msg, boolean flush, ChannelPromise promise) {
     AbstractChannelHandlerContext next = findContextOutbound();
     final Object m = pipeline.touch(msg, next);
@@ -295,7 +295,7 @@ private void invokeFlush0() {
 
 ### Future 类
 
-{% highlight java %}
+{% highlight java linenos %}
 ChannelFuture newFailedFuture(Throwable cause);
 ChannelProgressivePromise newProgressivePromise();
 ChannelPromise newPromise();

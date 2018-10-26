@@ -13,14 +13,14 @@ ChannelPipeline 实现了拦截器模式（[Intercepting Filter](http://www.orac
 
 管道中的主体结构为由 AbstractChannelHandlerContext 组成的双向链表，head 和 tail 分别为链表的表头和表尾。出站事件（outbound event）从 tail 流向 head，入站事件（inbound event）从 head 流向 tail。
 
-{% highlight java %}
+{% highlight java linenos %}
 final AbstractChannelHandlerContext head;
 final AbstractChannelHandlerContext tail;
 {% endhighlight %}
 
 在构造管道实例时，初始化了双向链表的基本结构。由构造函数的参数，我们也可看出一个 channel 会对应一个管道实例。
 
-{% highlight java %}
+{% highlight java linenos %}
 protected DefaultChannelPipeline(Channel channel) {
     this.channel = ObjectUtil.checkNotNull(channel, "channel");
     succeededFuture = new SucceededChannelFuture(channel, null);
@@ -36,7 +36,7 @@ protected DefaultChannelPipeline(Channel channel) {
 
 childExecutors 用来固定管道任务在 EventExecutorGroup 中的工作线程。
 
-{% highlight java %}
+{% highlight java linenos %}
 private Map<EventExecutorGroup, EventExecutor> childExecutors;
 
 private EventExecutor childExecutor(EventExecutorGroup group) {
@@ -80,7 +80,7 @@ ChannelPipeline#addFirst 创建传入参数 ChannelHandler 的 AbstractChannelHa
 
 如果此时 channel 尚未注册到相应的工作线程（event loop），则调用方法 $callHandlerCallbackLater() 往异步任务队列中添加任务，等 channel 注册工作线程成功后，触发 ChannelPipeline#callHandlerAddedForAllHandlers 异步执行ChannelHandler#handlerAdded 方法 。
 
-{% highlight java %}
+{% highlight java linenos %}
 public final ChannelPipeline addFirst(String name, ChannelHandler handler) {
     return addFirst(null, name, handler);
 }
@@ -180,7 +180,7 @@ private void callHandlerAdded0(final AbstractChannelHandlerContext ctx) {
 
 方法 $callHandlerCallbackLater 往 pendingHandlerCallbackHead 为头指针的单链表的表尾插入异步任务。任务分为 AbstractChannelHandlerContext 添加任务和删除任务，最终都是要在 ctx 自己的工作线程中去调用它关联的 ChannelHandler#handlerAdded 或者 ChannelHandler#handlerRemoved 方法。
 
-{% highlight java %}
+{% highlight java linenos %}
 /**
  * This is the head of a linked list that is processed by {@link #callHandlerAddedForAllHandlers()} and so process
  * all the pending {@link #callHandlerAdded0(AbstractChannelHandlerContext)}.
@@ -241,7 +241,7 @@ private final class PendingHandlerAddedTask extends PendingHandlerCallback {
 
 逻辑和 #addFirst 类似。
 
-{% highlight java %}
+{% highlight java linenos %}
 // 在链表表尾 tail 之前插入 newCtx
 private void addLast0(AbstractChannelHandlerContext newCtx) {
     AbstractChannelHandlerContext prev = tail.prev;
@@ -256,7 +256,7 @@ private void addLast0(AbstractChannelHandlerContext newCtx) {
 
 逻辑和 #addFirst 类似。
 
-{% highlight java %}
+{% highlight java linenos %}
 // 在链表元素 ctx 之前插入 newCtx
 private static void addBefore0(AbstractChannelHandlerContext ctx, AbstractChannelHandlerContext newCtx) {
     newCtx.prev = ctx.prev;
@@ -270,7 +270,7 @@ private static void addBefore0(AbstractChannelHandlerContext ctx, AbstractChanne
 
 逻辑和 #addFirst 类似。
 
-{% highlight java %}
+{% highlight java linenos %}
 // 在链表元素 ctx 之后插入 newCtx
 private static void addAfter0(AbstractChannelHandlerContext ctx, AbstractChannelHandlerContext newCtx) {
     newCtx.prev = ctx;
@@ -286,7 +286,7 @@ private static void addAfter0(AbstractChannelHandlerContext ctx, AbstractChannel
 
 同 #addFirst 一样，如果此时 channel 还没有注册工作线程，往 pendingHandlerCallbackHead 指向的链表中添加 remove 任务，待将来执行。
 
-{% highlight java %}
+{% highlight java linenos %}
 public final ChannelHandler remove(String name) {
     return remove(getContextOrDie(name)).handler();
 }
@@ -361,7 +361,7 @@ private final class PendingHandlerRemovedTask extends PendingHandlerCallback {
 
 > 要保证 ChannelHandler#handlerAdded 在 ChannelHandler#handlerRemoved 之前调用。因为 ChannelHandler#handlerRemoved 可能会触发 ChannelHandler#channelRead 和 ChannelHandler#flush 方法，这些方法必须在新的 ChannelHandler#handlerAdded 调用之后才能执行。
 
-{% highlight java %}
+{% highlight java linenos %}
 private ChannelHandler replace(
         final AbstractChannelHandlerContext ctx, String newName, ChannelHandler newHandler) {
     assert ctx != head && ctx != tail;
@@ -405,7 +405,7 @@ ChannelPipeline#fireChannelRegistered 方法直接调用 AbstractChannelHandlerC
 
 ChannelHandlerContext 分析见 [Netty 之 ChannelHandler 上下文 ChannelHandlerContext](/netty-ChannelHandlerContext/) 。
 
-{% highlight java %}
+{% highlight java linenos %}
 public final ChannelPipeline fireChannelRegistered() {
     AbstractChannelHandlerContext.invokeChannelRegistered(head);
     return this;
@@ -418,7 +418,7 @@ ChannelPipeline#bind 从链表的尾部开始调用 ChannelHandlerContext#bind �
 
 ChannelHandlerContext 分析见 [Netty 之 ChannelHandler 上下文 ChannelHandlerContext](/netty-ChannelHandlerContext/) 。
 
-{% highlight java %}
+{% highlight java linenos %}
 public final ChannelFuture bind(SocketAddress localAddress) {
     return tail.bind(localAddress);
 }
@@ -434,7 +434,7 @@ channel 在第一次注册工作线程的时候要调用 ChannelPipeline#invokeH
 
 > 确保之前添加的所有 ChannelHandler 在处理其他事件之前先调用 ChannelHandler#handlerAdded 方法。
 
-{% highlight java %}
+{% highlight java linenos %}
 final void invokeHandlerAddedIfNeeded() {
     assert channel.eventLoop().inEventLoop();
     if (firstRegistration) {

@@ -12,7 +12,7 @@ category: netty
 
 ChannelOutboundBuffer 为 Channel 的数据发送缓冲区，数据封装成以 Entry 节点的形式存放在单向链表中。链表有三个指针：
 
-{% highlight java %}
+{% highlight java linenos %}
 // The Entry that is the first in the linked-list structure that was flushed
 private Entry flushedEntry;
 // The Entry which is the first unflushed in the linked-list structure
@@ -31,7 +31,7 @@ private int flushed;
 
 ChannelOutboundBuffer#addMessage 在链表尾部添加 Entry。
 
-{% highlight java %}
+{% highlight java linenos %}
 public void addMessage(Object msg, int size, ChannelPromise promise) {
     Entry entry = Entry.newInstance(msg, size, total(msg), promise);
     if (tailEntry == null) {
@@ -51,7 +51,7 @@ public void addMessage(Object msg, int size, ChannelPromise promise) {
 
 在方法 #incrementPendingOutboundBytes() 中修改缓存中的数据大小 totalPendingSize 。如果 totalPendingSize 大于 channel 配置的写缓冲区高水位线，则触发 ChannelPipeline 的 ChannelWritabilityChanged 事件，禁止继续写入。
 
-{% highlight java %}
+{% highlight java linenos %}
 private void incrementPendingOutboundBytes(long size, boolean invokeLater) {
     if (size == 0) {
         return;
@@ -87,7 +87,7 @@ ChannelOutboundBuffer#addFlush 把当前链表中处于 [unflushedEntry, tailEnt
 
 遍历的过程当中，那些 promise 不能设置成 uncancellable 的 Entry ，调用 Entry#cancel 回收内存并减少 totalPendingSize 。如果 totalPendingSize 小于 channel 配置的写缓冲区低水位线，则触发 ChannelPipeline 的 ChannelWritabilityChanged 事件，设置可写。最后置 unflushedEntry 为 null。
 
-{% highlight java %}
+{% highlight java linenos %}
 public void addFlush() {
     Entry entry = unflushedEntry;
     if (entry != null) {
@@ -149,7 +149,7 @@ int cancel() {
 
 ChannelOutboundBuffer#current 返回 flushedEntry 指向的 Entry 中的数据。
 
-{% highlight java %}
+{% highlight java linenos %}
 public Object current() {
     Entry entry = flushedEntry;
     if (entry == null) {
@@ -166,7 +166,7 @@ public Object current() {
 
 ChannelOutboundBuffer#progress 进度通知。如果 flushedEntry 中的 promise 为 ChannelProgressivePromise 类型，则尝试通知进度，也就是当前 Entry 中的数据真正写入 channel 的进度。
 
-{% highlight java %}
+{% highlight java linenos %}
 public void progress(long amount) {
     Entry e = flushedEntry;
     assert e != null;
@@ -189,7 +189,7 @@ ChannelOutboundBuffer#remove  从链表中删除 flushedEntry 指向的 Entry �
 
 最后回收 Entry。
 
-{% highlight java %}
+{% highlight java linenos %}
 public boolean remove() {
     Entry e = flushedEntry;
     if (e == null) {
@@ -236,7 +236,7 @@ private void removeEntry(Entry e) {
 
 ChannelOutboundBuffer#remove(Throwable cause) 基本逻辑跟 ChannelOutboundBuffer#remove一致，除了设置 Entry 的 promise 为 fail。
 
-{% highlight java %}
+{% highlight java linenos %}
 public boolean remove(Throwable cause) {
     return remove0(cause, true);
 }
@@ -279,7 +279,7 @@ ChannelOutboundBuffer#removeBytes(long writtenBytes) 从 flushedEntry 指向的 
 
 本方法的前提是链表中 Entry 的数据类型为 ByteBuf。
 
-{% highlight java %}
+{% highlight java linenos %}
 public void removeBytes(long writtenBytes) {
     for (;;) {
         Object msg = current();
@@ -324,7 +324,7 @@ maxCount 为 ByteBufer[] 最大长度，而 maxBytes 为 ByteBufer[] 中数据�
 
 > 部分操作系统的 writeX() 系统调用最大只能允许 Integer.MAX_VALUE 字节的数据写入。
 
-{% highlight java %}
+{% highlight java linenos %}
 public ByteBuffer[] nioBuffers(int maxCount, long maxBytes) {
     assert maxCount > 0;
     assert maxBytes > 0;
@@ -400,7 +400,7 @@ public ByteBuffer[] nioBuffers(int maxCount, long maxBytes) {
 
 参数 notify 指定其他条件满足的情况下，是否需要出发 WritabilityChanged 事件。 
 
-{% highlight java %}
+{% highlight java linenos %}
 void failFlushed(Throwable cause, boolean notify) {
     if (inFail) {
         return;
@@ -425,7 +425,7 @@ ChannelOutboundBuffer#isWritable 返回 false 时，totalPendingSize 高于 chan
 
 > 大白话：`写开关`关闭的情况下，需要从缓冲区拿掉多少字节，才能继续写
 
-{% highlight java %}
+{% highlight java linenos %}
 public long bytesBeforeWritable() {
     long bytes = totalPendingSize - channel.config().getWriteBufferLowWaterMark();
     if (bytes > 0) {
@@ -441,7 +441,7 @@ ChannelOutboundBuffer#isWritable 返回 true 时，totalPendingSize 低于 chann
 
 > 大白话：`写开关`打开的情况下，还能向缓冲区写多少字节
 
-{% highlight java %}
+{% highlight java linenos %}
 public long bytesBeforeUnwritable() {
     long bytes = channel.config().getWriteBufferHighWaterMark() - totalPendingSize;
     if (bytes > 0) {

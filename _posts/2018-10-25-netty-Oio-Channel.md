@@ -13,7 +13,7 @@ AbstractOioChannel 中的 Unsafe 实现类 DefaultOioUnsafe，补充实现了 Ab
 
 如果连接成功，往管道中发送 channel `激活`事件。
 
-{% highlight java %}
+{% highlight java linenos %}
 private final class DefaultOioUnsafe extends AbstractUnsafe {
     @Override
     public void connect(
@@ -44,21 +44,22 @@ private final class DefaultOioUnsafe extends AbstractUnsafe {
 }
 {% endhighlight %}
 
-不同的类型的 channel 会注册到不同类型的工作线程。这里 OIO 类 channel 的工作线程需要是 ThreadPerChannelEventLoop 类型或其子类型。
+不同的类型的 channel 会注册到不同类型的工作线程。这里 Oio 类 channel 的工作线程需要是 ThreadPerChannelEventLoop 类型或其子类型。
 
 方法 #isCompatible 用来判断给定的 EventLoop 是否为当前 channel 可用的。
 
-{% highlight java %}
+{% highlight java linenos %}
 protected boolean isCompatible(EventLoop loop) {
     return loop instanceof ThreadPerChannelEventLoop;
 }
 {% endhighlight %}
 
-字段 readPending 指示有无`读操作`在等待处理。如果为 true 说明读`取操作`已发起，但还没有真正执行；false 说明没有发起`读操作`，或者`读操作`正在执行/已完成。
+字段 readPending 指示有无`读操作`在等待处理。如果为 true 说明`读操作`已发起，但还没有真正执行；false 说明没有发起`读操作`，或者`读操作`正在执行/已完成。
 
 方法 #clearReadPending 设置当前没有`读操作`在等待处理。
 
-{% highlight java %}
+{% highlight java linenos %}
+// 有无 读操作 在等待处理
 boolean readPending;
 
 private final Runnable clearReadPendingRunnable = new Runnable() {
@@ -92,7 +93,7 @@ AbstractOioChannel 中实现了 #beginRead。
 2. 否则，设置 readPending 为 true；
 3. 在工作线程中调用子类实现 #doRead 异步发起`读操作`。
    
-{% highlight java %}
+{% highlight java linenos %}
 protected void doBeginRead() throws Exception {
     if (readPending) {
         return;
@@ -118,7 +119,7 @@ private final Runnable readTask = new Runnable() {
 
 OioServerSocketChannel 的继承树如下：
 
-{% highlight java %}
+{% highlight java linenos %}
 AbstractChannel 
     <- AbstractOioChannel 
     <- AbstractOioMessageChannel 
@@ -137,7 +138,7 @@ AbstractOioMessageChannel 服务器 channel 的基类，它主要实现了上面
 8. 如果 channel 标记为 closed，且 channel 为打开状态，则执行关闭 channel操作；
 9. 如果有`读操作`在等待、channel 被设置成自动读取或者本次没读到数据，但 channel 为`激活`状态，则再次发起`读操作`。
 
-{% highlight java %}
+{% highlight java linenos %}
 private final List<Object> readBuf = new ArrayList<Object>();
 protected void doRead() {
     if (!readPending) {
@@ -215,7 +216,7 @@ protected abstract int doReadMessages(List<Object> msgs) throws Exception;
 
 OioServerSocketChannel 是同步阻塞 IO 的服务端实现，它接受新的客户端连接，并为它们创建 OioSocketChannel。
 
-{% highlight java %}
+{% highlight java linenos %}
 public OioServerSocketChannel(ServerSocket socket) {
     // 没有 parent
     super(null);
@@ -249,7 +250,7 @@ public OioServerSocketChannel(ServerSocket socket) {
 
 > 这里 #accept 的超时时间为 1 秒。
 
-{% highlight java %}
+{% highlight java linenos %}
 protected int doReadMessages(List<Object> buf) throws Exception {
     if (socket.isClosed()) {
         return -1;
@@ -275,7 +276,7 @@ protected int doReadMessages(List<Object> buf) throws Exception {
 
 下面的几个方法都是直接操作底层的 java socket。very easy。其他的几个客户端通道类的方法，直接抛出异常 UnsupportedOperationException。
 
-{% highlight java %}
+{% highlight java linenos %}
 public boolean isOpen() {
     return !socket.isClosed();
 }
@@ -299,7 +300,7 @@ protected void doClose() throws Exception {
 
 OioSocketChannel 的继承树如下：
 
-{% highlight java %}
+{% highlight java linenos %}
 AbstractChannel 
     <- AbstractOioChannel 
     <- AbstractOioByteChannel 
@@ -307,9 +308,9 @@ AbstractChannel
     <- OioSocketChannel
 {% endhighlight %}
 
-{% highlight java %}
+{% highlight java linenos %}
 {% endhighlight %}
 
 
-{% highlight java %}
+{% highlight java linenos %}
 {% endhighlight %}

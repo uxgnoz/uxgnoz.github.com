@@ -40,7 +40,7 @@ protected DefaultChannelPipeline newChannelPipeline() {
 
 AbstractChannel 中所有的`出站`类方法都是委托给 pipeline 去执行的。比如下面的 AbstractChannel#connect：
 
-{% highlight java %}
+{% highlight java linenos %}
 
 public ChannelFuture connect(SocketAddress remoteAddress) {
     return pipeline.connect(remoteAddress);
@@ -71,7 +71,7 @@ AbstractUnsafe#register 主要功能为 channel 注册工作线程（EventLoop�
 6. 如果 channel 是首次注册，向管道中发送 channel `激活`事件；
 7. 如果 channel 是非首次注册，且 channel 设置了自动读取，则调用 #doBeginRead 发起数据读取操作。
 
-{% highlight java %}
+{% highlight java linenos %}
 public final void register(EventLoop eventLoop, final ChannelPromise promise) {
     // 设置工作线程
     AbstractChannel.this.eventLoop = eventLoop;
@@ -178,7 +178,7 @@ channel 注销工作线程（EventLoop）。注销工作需要等到当前工作
 5. 如果此时还处于注册状态，则修改状态为`注销`，同时向管道中发送 channel `注销`事件；
 6. 设置 promise 结果为成功。
 
-{% highlight java %}
+{% highlight java linenos %}
 public final void deregister(final ChannelPromise promise) {
     // 防止在用户线程调用
     assertEventLoop();
@@ -240,7 +240,7 @@ private void invokeLater(Runnable task) {
 3. 绑定成功，异步向管道中发出 channel `激活`事件；
 4. 设置 promise 结果为成功。
 
-{% highlight java %}
+{% highlight java linenos %}
 public final void bind(final SocketAddress localAddress, final ChannelPromise promise) {
     assertEventLoop();
 
@@ -278,7 +278,7 @@ public final void bind(final SocketAddress localAddress, final ChannelPromise pr
 
 ChannelOutboundBuffer 见 [Netty 之发送缓冲区 ChannelOutboundBuffer](/netty-ChannelOutboundBuffer/)。
 
-{% highlight java %}
+{% highlight java linenos %}
 public final void write(Object msg, ChannelPromise promise) {
     assertEventLoop();
 
@@ -315,7 +315,7 @@ inFlush0 为 true 说明当前处于数据写出过程，防止重复调用。
 
 > 在 AbstractChannel 的某些具体实现中，方法 #flush0 能够被用户线程调用，可能会和工作线程中调用的 #flush 并发执行。 
 
-{% highlight java %}
+{% highlight java linenos %}
 public final void flush() {
     assertEventLoop();
 
@@ -396,7 +396,7 @@ ChannelOutboundBuffer 的分析见 [Netty 之发送缓冲区 ChannelOutboundBuff
 
 > 第 6、7 步需要放到 channel 自己的工作线程中执行。
 
-{% highlight java %}
+{% highlight java linenos %}
 public final void close(final ChannelPromise promise) {
     assertEventLoop();
 
@@ -496,7 +496,7 @@ protected abstract void doClose() throws Exception;
 4. 设置 promise 成功；
 5. 关闭通道。
 
-{% highlight java %}
+{% highlight java linenos %}
 public final void disconnect(final ChannelPromise promise) {
     assertEventLoop();
 
@@ -553,7 +553,7 @@ protected final void closeIfClosed() {
 9. 关闭 ChannelOutboundBuffer；
 10. 在`管道`中发送`关闭`事件。
 
-{% highlight java %}
+{% highlight java linenos %}
 public final void shutdownOutput(final ChannelPromise promise) {
     assertEventLoop();
     shutdownOutput(promise, null);
