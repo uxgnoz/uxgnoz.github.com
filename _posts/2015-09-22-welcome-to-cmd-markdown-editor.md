@@ -45,7 +45,7 @@ $$\sum^{j-1}_{k=0}{\widehat{\gamma}_{kj} z_k}$$
 
 ### 3. 高亮一段代码[^code]
 
-{% highlight python %}
+{% highlight python linenos %}
 @requires_authorization
 class SomeClass:
     pass
