@@ -45,7 +45,6 @@ $$\sum^{j-1}_{k=0}{\widehat{\gamma}_{kj} z_k}$$
 
 ### 3. 高亮一段代码[^code]
 
-```python
 {% highlight python %}
 @requires_authorization
 class SomeClass:
@@ -55,7 +54,6 @@ if __name__ == '__main__':
     # A comment
     print 'hello world'
 {% endhighlight %}
-```
 
 {% highlight java %}
 public boolean supports(ByteBuffer bb) {

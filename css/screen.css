@@ -210,8 +210,8 @@ ol, ul {
   
 #post strong {
   /*font-size:14px;*/
-  font-weight:700;
-  /*color: darkblue;*/
+  font-weight:900;
+  color: darkblue;
 }
 
 .rouge-table {
