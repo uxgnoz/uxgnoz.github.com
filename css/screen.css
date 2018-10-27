@@ -245,7 +245,7 @@ figure > pre {
 .gutter {
   padding: 0px;
   background-color: rgba(102, 128, 153, 0.06);
-  border-right: 1px solid #ccc;
+  border-right: 1px solid #5fba3d;
   color: #999;
   width: 30px;
 }
