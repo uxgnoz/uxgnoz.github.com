@@ -103,15 +103,15 @@ ul.posts li {
 }
 
 ul.posts span {
-  color: #aaa;
-  font-family: 'Adobe Hebrew', Courier,'Microsoft Yahei', sans-serif;
+  color: rgba(102, 128, 153);
+  font-family: 'Adobe Hebrew', '宋体',  sans-serif;
   font-size: 11px;
 }
 
 ul.index_posts span {
-  color: #aaa;
-  font-family: 'Adobe Hebrew', Courier,'Microsoft Yahei', sans-serif;
-  font-size: 13px;
+  color: rgba(102, 128, 153);
+  font-family: 'Adobe Hebrew', '宋体' sans-serif;
+  font-size: 11px;
 }
 
 .highlighter-rouge {
