@@ -277,14 +277,11 @@ figure > pre {
   /* border: 1px dashed rgba(102, 128, 153, 0.6); */
   border-radius: 3px;
   background-color: rgba(102, 128, 153, 0.0470588);
-  /* font-family: 'Adobe Hebrew', "Courier", 'Microsoft Yahei', sans-serif; */
 }
 
 .post-info {
   margin: 30px 5px 10px 5px;
-  font-size: 15px;
-  /*font-weight: bold;*/
-
+  font-size: 13px;
 }
 
 strike, linethru {text-decoration:line-through;} 
