@@ -110,7 +110,7 @@ ul.posts span {
 
 ul.index_posts span {
   color: rgba(102, 128, 153);
-  font-family: 'Adobe Hebrew', '宋体' sans-serif;
+  font-family: 'Adobe Hebrew', '宋体', sans-serif;
   font-size: 11px;
 }
 
