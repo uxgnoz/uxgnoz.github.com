@@ -1,9 +1,9 @@
 ---
-title: Netty 之同步阻塞通道
+title: Netty 之同步阻塞通道 OioServerSocketChannel / OioSocketChannel
 layout: posts
 ---
 
-# Netty 之同步阻塞通道
+# Netty 之同步阻塞通道 OioServerSocketChannel / OioSocketChannel
 
 ------
 
