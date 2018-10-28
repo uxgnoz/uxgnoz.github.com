@@ -247,9 +247,12 @@ public final void connect(
                 connectTimeoutFuture = eventLoop().schedule(new Runnable() {
                     @Override
                     public void run() {
-                        ChannelPromise connectPromise = AbstractNioChannel.this.connectPromise;
+                        ChannelPromise connectPromise = 
+                                AbstractNioChannel.this.connectPromise;
                         ConnectTimeoutException cause =
-                                new ConnectTimeoutException("connection timed out: " + remoteAddress);
+                                new ConnectTimeoutException(
+                                    "connection timed out: " + remoteAddress
+                                );
                         if (connectPromise != null && connectPromise.tryFailure(cause)) {
                             close(voidPromise());
                         }
@@ -306,7 +309,10 @@ public final void finishConnect() {
         doFinishConnect();
         fulfillConnectPromise(connectPromise, wasActive);
     } catch (Throwable t) {
-        fulfillConnectPromise(connectPromise, annotateConnectException(t, requestedRemoteAddress));
+        fulfillConnectPromise(
+            connectPromise, 
+            annotateConnectException(t, requestedRemoteAddress)
+        );
     } finally {
         // Check for null as the connectTimeoutFuture is only created 
         // if a connectTimeoutMillis > 0 is used
@@ -370,7 +376,8 @@ AbstractChannel
 作为 AbstractNioChannel#doConnect 的具体实现，调用了低层 SocketChannel 的 #connect 方法，向服务端发起连接。 由于 Netty 中的多路复用通道总是设置成非阻塞模式，因此 #connect 方法总是反回 false（？），这时需要在 selectionKey 中加入事件类型 *SelectionKey.OP_CONNECT*。在下一轮执行 #select 后，一旦出现该类事件，说明*连接已完成*，可以调用 SocketChannel#finishConnect 方法结束连接过程。
 
 {% highlight java linenos %}
-protected boolean doConnect(SocketAddress remoteAddress, SocketAddress localAddress) throws Exception {
+protected boolean doConnect(SocketAddress remoteAddress, SocketAddress localAddress) 
+        throws Exception {
     if (localAddress != null) {
         // 如果需要，绑定本地地址
         doBind0(localAddress);
