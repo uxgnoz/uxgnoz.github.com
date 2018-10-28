@@ -9,7 +9,7 @@ layout: posts
 
 ## AbstractOioChannel
 
-AbstractOioChannel 中的 Unsafe 实现类 DefaultOioUnsafe，补充实现了 AbstractUnsafe#connect 方法。执行连接的具体逻辑还是需要 AbstractOioChannel 不同子类自己去实现 #doConnect 方法。
+AbstractOioChannel 中的 DefaultOioUnsafe 继承自 AbstractChannel#Unsafe，补充实现了 AbstractUnsafe#connect 方法。执行连接的具体逻辑还是需要 AbstractOioChannel 不同子类自己去实现 #doConnect 方法。
 
 如果连接成功，往管道中发送 channel `激活`事件。
 
@@ -56,7 +56,7 @@ protected boolean isCompatible(EventLoop loop) {
 
 字段 readPending 指示有无`读操作`在等待处理。如果为 true 说明`读操作`已发起，但还没有真正执行；false 说明没有发起`读操作`，或者`读操作`正在执行/已完成。
 
-方法 #clearReadPending 设置当前没有`读操作`在等待处理。
+方法 #clearReadPending 设置当前没有`读操作`在等待执行。
 
 {% highlight java linenos %}
 // 有无 读操作 在等待处理
