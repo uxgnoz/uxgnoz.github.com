@@ -1,9 +1,9 @@
 ---
-title: Netty 之多路复用通道 NioServerSocketChannel/NioSocketChannel
+title: Netty 之多路复用通道 NioServerSocketChannel / NioSocketChannel
 layout: posts
 ---
 
-# Netty 之多路复用通道 NioServerSocketChannel/NioSocketChannel
+# Netty 之多路复用通道 NioServerSocketChannel / NioSocketChannel
 
 ------
 
