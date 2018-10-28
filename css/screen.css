@@ -347,3 +347,8 @@ img {
   margin-top: 10px;
   margin-bottom: 5px;
 }
+
+#permalink {
+  color: #5fba3d;
+  font-weight: bold;
+}
