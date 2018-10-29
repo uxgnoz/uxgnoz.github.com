@@ -7,7 +7,7 @@ layout: posts
 
 ------
 
-## AbstractNioChannel
+## 0x01 AbstractNioChannel
 
 AbstractNioChannel 是所有基于 Selector 多路复用通道的抽象基类。下面是它的部分字段及构造方法。
 
@@ -167,7 +167,7 @@ protected final ByteBuf newDirectBuffer(ByteBuf buf) {
 
 ------
 
-## AbstractNioChannel#AbstractNioUnsafe
+## 0x02 AbstractNioChannel#AbstractNioUnsafe
 
 AbstractNioUnsafe 继承了 AbstractChannel#AbstractUnsafe，同时实现了 AbstractNioChannel#NioUnsafe 接口。
 
@@ -372,7 +372,7 @@ private boolean isFlushPending() {
 
 ------
 
-## NioServerSocketChannel
+## 0x03 NioServerSocketChannel
 
 NioServerSocketChannel 的继承树如下：
 
@@ -383,7 +383,7 @@ AbstractChannel
     <- NioServerSocketChannel
 {% endhighlight %}
 
-### AbstractNioMessageChannel
+### 0x0301 AbstractNioMessageChannel
 
 {% highlight java linenos %}
 {% endhighlight %}
@@ -391,7 +391,7 @@ AbstractChannel
 {% highlight java linenos %}
 {% endhighlight %}
 
-### NioServerSocketChannel
+### 0x0302 NioServerSocketChannel
 
 {% highlight java linenos %}
 {% endhighlight %}
@@ -403,7 +403,7 @@ AbstractChannel
 
 ------
 
-## NioSocketChannel
+## 0x04 NioSocketChannel
 
 NioServerSocketChannel 的继承树如下：
 
@@ -414,9 +414,98 @@ AbstractChannel
     <- NioSocketChannel
 {% endhighlight %}
 
-### AbstractNioByteChannel
+### 0x0401 AbstractNioByteChannel
 
-### NioSocketChannel
+下面的代码实现了 AbstractChannel#doWrite 方法。
+
+每一次调用 #doWriteInternal 成功的数据写出 writeSpinCount 递减 1，直到 writeSpinCount 为 0。
+
+在 #doWriteInternal 中，localFlushedAmount 为实际写出的字节数，如果 localFlushedAmount 小于等于 0，说明操作系统网络底层的写缓冲区满了。
+
+> writeSpinCount 限制了单个 socket 的资源使用，比如 cpu 时间。
+
+{% highlight java linenos %}
+@Override
+protected void doWrite(ChannelOutboundBuffer in) throws Exception {
+    int writeSpinCount = config().getWriteSpinCount();
+    do {
+        Object msg = in.current();
+        if (msg == null) {
+            // 出站数据全部写完，取消 写关注
+            clearOpWrite();
+            // Directly return here so incompleteWrite(...) is not called.
+            return;
+        }
+        writeSpinCount -= doWriteInternal(in, msg);
+    } while (writeSpinCount > 0);
+
+    incompleteWrite(writeSpinCount < 0);
+}
+
+private int doWriteInternal(ChannelOutboundBuffer in, Object msg) throws Exception {
+    if (msg instanceof ByteBuf) {
+        ByteBuf buf = (ByteBuf) msg;
+        if (!buf.isReadable()) {
+            in.remove();
+            return 0;
+        }
+
+        // 数据写出，localFlushedAmount 为实际写出数据字节数
+        final int localFlushedAmount = doWriteBytes(buf);
+        if (localFlushedAmount > 0) {
+            // 进度通知
+            in.progress(localFlushedAmount);
+            if (!buf.isReadable()) {
+                // 从出站缓冲区删除队首 Entry
+                in.remove();
+            }
+            return 1;
+        }
+    } else if (msg instanceof FileRegion) {
+        FileRegion region = (FileRegion) msg;
+        if (region.transferred() >= region.count()) {
+            // 从出站缓冲区删除队首 Entry
+            in.remove();
+            return 0;
+        }
+
+        // 数据写出，localFlushedAmount 为实际写出数据字节数
+        long localFlushedAmount = doWriteFileRegion(region);
+        if (localFlushedAmount > 0) {
+            in.progress(localFlushedAmount);
+            if (region.transferred() >= region.count()) {
+                // 从出站缓冲区删除队首 Entry
+                in.remove();
+            }
+            return 1;
+        }
+    } else {
+        // Should not reach here.
+        throw new Error();
+    }
+
+    //
+    return WRITE_STATUS_SNDBUF_FULL;
+}
+
+protected final void incompleteWrite(boolean setOpWrite) {
+    // Did not write completely.
+    if (setOpWrite) {
+        setOpWrite();
+    } else {
+        // It is possible that we have set the write OP, woken up by NIO because the socket is writable, and then
+        // use our write quantum. In this case we no longer want to set the write OP because the socket is still
+        // writable (as far as we know). We will find out next time we attempt to write if the socket is writable
+        // and set the write OP if necessary.
+        clearOpWrite();
+
+        // Schedule flush again later so other tasks can be picked up in the meantime
+        eventLoop().execute(flushTask);
+    }
+}
+{% endhighlight %}
+
+### 0x0402 NioSocketChannel
 
 作为 AbstractNioChannel#doConnect 的具体实现，调用了低层 SocketChannel#connect 方法，向服务端发起连接。 由于 Netty 中的多路复用通道总是被设置成非阻塞模式，因此 #connect 方法总是反回 false（？），这时需要在 selectionKey 中加入事件类型 *SelectionKey.OP_CONNECT*。在执行下一轮 #select 后，一旦出现该类事件，说明*连接已完成*，可以调用 SocketChannel#finishConnect 方法结束连接过程。
 
