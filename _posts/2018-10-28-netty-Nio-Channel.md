@@ -416,9 +416,11 @@ AbstractChannel
 
 ### 0x0401 AbstractNioByteChannel
 
-下面的代码实现了 AbstractChannel#doWrite 方法。
+下面的代码实现了 AbstractChannel#doWrite 方法。在执行 AbstractUnsafe#flush 时，会调用 #doWrite 的子类具体实现，执行数据写入操作。
 
-每一次调用 #doWriteInternal 成功的数据写出 writeSpinCount 递减 1，直到 writeSpinCount 为 0。
+> 在 AbstractChannel$AbstractUnsafe 中，#flush 会调用 #flush0，进而调用 #doWrite。
+
+每一次 #doWriteInternal 成功的数据写出 writeSpinCount 递减 1，直到 writeSpinCount 为 0。
 
 在 #doWriteInternal 中，localFlushedAmount 为实际写出的字节数，如果 localFlushedAmount 小于等于 0，说明操作系统网络底层的写缓冲区满了。
 
@@ -446,6 +448,7 @@ private int doWriteInternal(ChannelOutboundBuffer in, Object msg) throws Excepti
     if (msg instanceof ByteBuf) {
         ByteBuf buf = (ByteBuf) msg;
         if (!buf.isReadable()) {
+            // buf 无可写数据，从出站缓冲区删除队首 Entry
             in.remove();
             return 0;
         }
@@ -456,7 +459,7 @@ private int doWriteInternal(ChannelOutboundBuffer in, Object msg) throws Excepti
             // 进度通知
             in.progress(localFlushedAmount);
             if (!buf.isReadable()) {
-                // 从出站缓冲区删除队首 Entry
+                // buf 无可写数据，从出站缓冲区删除队首 Entry
                 in.remove();
             }
             return 1;
@@ -480,27 +483,69 @@ private int doWriteInternal(ChannelOutboundBuffer in, Object msg) throws Excepti
             return 1;
         }
     } else {
-        // Should not reach here.
+        // 咱就支持上面 2 中数据类型
         throw new Error();
     }
 
-    //
+    // 系统缓冲区满，返回 Integer.MAX_VALUE
     return WRITE_STATUS_SNDBUF_FULL;
 }
+{% endhighlight %}
 
+定额 writeSpinCount 用完，当出站缓冲区依然有数据未写出。有 2 种情况：
+
+1. writeSpinCount = 0，设置 OP_WRITE（？干啥、不懂哎！）；
+2. writeSpinCount < 0，说明底层网络缓冲区满了，清除 OP_WRITE， 我们让打包*数据写出任务*到工作线程，以后继续。
+
+{% highlight java linenos %}
 protected final void incompleteWrite(boolean setOpWrite) {
     // Did not write completely.
     if (setOpWrite) {
         setOpWrite();
     } else {
-        // It is possible that we have set the write OP, woken up by NIO because the socket is writable, and then
-        // use our write quantum. In this case we no longer want to set the write OP because the socket is still
-        // writable (as far as we know). We will find out next time we attempt to write if the socket is writable
-        // and set the write OP if necessary.
+        // It is possible that we have set the write OP, woken up by NIO 
+        // because the socket is writable, and then use our write quantum. 
+        // In this case we no longer want to set the write OP because the socket is still
+        // writable (as far as we know). We will find out next time we attempt to write 
+        // if the socket is writable and set the write OP if necessary.
         clearOpWrite();
 
         // Schedule flush again later so other tasks can be picked up in the meantime
         eventLoop().execute(flushTask);
+    }
+}
+
+private final Runnable flushTask = new Runnable() {
+    @Override
+    public void run() {
+        // 直接写出上次未完数据，不用在出站缓冲区中重新确定数据范围
+        ((AbstractNioUnsafe) unsafe()).flush0();
+    }
+};
+
+// 设置关注事件类型 OP_WRITE
+protected final void setOpWrite() {
+    final SelectionKey key = selectionKey();
+    if (!key.isValid()) {
+        return;
+    }
+
+    final int interestOps = key.interestOps();
+    if ((interestOps & SelectionKey.OP_WRITE) == 0) {
+        key.interestOps(interestOps | SelectionKey.OP_WRITE);
+    }
+}
+
+// 取消关注事件类型 OP_WRITE
+protected final void clearOpWrite() {
+    final SelectionKey key = selectionKey();
+    if (!key.isValid()) {
+        return;
+    }
+
+    final int interestOps = key.interestOps();
+    if ((interestOps & SelectionKey.OP_WRITE) != 0) {
+        key.interestOps(interestOps & ~SelectionKey.OP_WRITE);
     }
 }
 {% endhighlight %}
@@ -535,10 +580,16 @@ protected boolean doConnect(SocketAddress remoteAddress, SocketAddress localAddr
 }
 
 protected void doFinishConnect() throws Exception {
+    // 结束连接过程
     if (!javaChannel().finishConnect()) {
         throw new Error();
     }
 }
+{% endhighlight %}
+
+
+
+{% highlight java linenos %}
 {% endhighlight %}
 
 {% highlight java linenos %}
