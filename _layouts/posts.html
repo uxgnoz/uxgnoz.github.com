@@ -12,7 +12,7 @@ layout: default
     {% for post in site.related_posts limit:5 %}
       <li style="list-style:none;">
         <span>{{ post.date | date: "%F" }}</span> 
-        <style color='#5fba3d'> &raquo; </style> 
+        <span style='color:"#5fba3d"'> &raquo; </span> 
         <a href="{{ post.url }}">{{ post.title }}</a></li>
     {% endfor %}
   </ul>
