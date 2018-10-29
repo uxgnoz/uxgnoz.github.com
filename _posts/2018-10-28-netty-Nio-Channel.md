@@ -216,8 +216,10 @@ protected final void removeReadOp() {
 1. 设置 promise 不可撤销，确保通道处于 open 状态，否则返回；
 2. 确保当前没有连接操作在同时执行，否则抛出 ConnectionPendingException；
 3. 调用子类实现 #doConnect 执行通道具体*发起连接*的逻辑；
-4. *连接发起成功*，往通道中发送 channel `激活`事件；
-5. 连接失败，
+4. *连接成功*，往通道中发送 channel `激活`事件；
+5. *连接尚未成功*，设置 connectPromise 为 promise，requestedRemoteAddress 为 remoteAddress；提交连接超时任务并设置 connectTimeoutFuture；在 connectPromise 中添加*连接任务取消逻辑*监听器。
+
+> 在非阻塞 Nio 中，#doConnect 方法会返回 false，指明连接发起中，但还未完成。
 
 {% highlight java linenos %}
 public final void connect(
@@ -238,6 +240,7 @@ public final void connect(
         if (doConnect(remoteAddress, localAddress)) {
             fulfillConnectPromise(promise, wasActive);
         } else {
+            // 非阻塞 Nio 中，一般会走这个分支
             connectPromise = promise;
             requestedRemoteAddress = remoteAddress;
 
@@ -253,7 +256,9 @@ public final void connect(
                                 new ConnectTimeoutException(
                                     "connection timed out: " + remoteAddress
                                 );
+                        // 尝试设置*连接任务*失败        
                         if (connectPromise != null && connectPromise.tryFailure(cause)) {
+                            // 关闭通道
                             close(voidPromise());
                         }
                     }
@@ -265,9 +270,11 @@ public final void connect(
                 public void operationComplete(ChannelFuture future) throws Exception {
                     if (future.isCancelled()) {
                         if (connectTimeoutFuture != null) {
+                            // 取消上面的超时任务
                             connectTimeoutFuture.cancel(false);
                         }
                         connectPromise = null;
+                        // 关闭通道
                         close(voidPromise());
                     }
                 }
@@ -297,16 +304,19 @@ private void fulfillConnectPromise(ChannelPromise promise, boolean wasActive) {
 }
 {% endhighlight %}
 
+一旦连接服务端过程完成，需要调用 #finishConenct 方法，结束连接，可能连接成功，也能连接失败。
+
+> 该方法只能在工作线程中调用。
+
 {% highlight java linenos %}
 public final void finishConnect() {
-    // Note this method is invoked by the event loop only if the connection attempt was
-    // neither cancelled nor timed out.
-
     assert eventLoop().inEventLoop();
 
     try {
         boolean wasActive = isActive();
+        // 比如从 selectionKey 的关注事件中去除*连接事件*
         doFinishConnect();
+        // 往通道中发送 channel `激活`事件
         fulfillConnectPromise(connectPromise, wasActive);
     } catch (Throwable t) {
         fulfillConnectPromise(
@@ -322,6 +332,41 @@ public final void finishConnect() {
         }
         connectPromise = null;
     }
+}
+
+private void fulfillConnectPromise(ChannelPromise promise, Throwable cause) {
+    if (promise == null) {
+        // Closed via cancellation and the promise has been notified already.
+        return;
+    }
+
+    // Use tryFailure() instead of setFailure() to avoid the race against cancel().
+    promise.tryFailure(cause);
+    closeIfClosed();
+}
+{% endhighlight %}
+
+在调用父类的 #flush0 之前检查 selectionKey 是否有效，同时它的*关注事件类型*中是否有 SelectionKey.OP_WRITE 类型。
+
+{% highlight java linenos %}
+protected final void flush0() {
+    // Flush immediately only when there's no pending flush.
+    // If there's a pending flush operation, event loop will call forceFlush() later,
+    // and thus there's no need to call it now.
+    if (!isFlushPending()) {
+        super.flush0();
+    }
+}
+
+public final void forceFlush() {
+    // directly call super.flush0() to force a flush now
+    super.flush0();
+}
+
+private boolean isFlushPending() {
+    SelectionKey selectionKey = selectionKey();
+    return selectionKey.isValid() 
+            && (selectionKey.interestOps() & SelectionKey.OP_WRITE) != 0;
 }
 {% endhighlight %}
 
@@ -373,7 +418,7 @@ AbstractChannel
 
 ### NioSocketChannel
 
-作为 AbstractNioChannel#doConnect 的具体实现，调用了低层 SocketChannel 的 #connect 方法，向服务端发起连接。 由于 Netty 中的多路复用通道总是设置成非阻塞模式，因此 #connect 方法总是反回 false（？），这时需要在 selectionKey 中加入事件类型 *SelectionKey.OP_CONNECT*。在下一轮执行 #select 后，一旦出现该类事件，说明*连接已完成*，可以调用 SocketChannel#finishConnect 方法结束连接过程。
+作为 AbstractNioChannel#doConnect 的具体实现，调用了低层 SocketChannel#connect 方法，向服务端发起连接。 由于 Netty 中的多路复用通道总是被设置成非阻塞模式，因此 #connect 方法总是反回 false（？），这时需要在 selectionKey 中加入事件类型 *SelectionKey.OP_CONNECT*。在执行下一轮 #select 后，一旦出现该类事件，说明*连接已完成*，可以调用 SocketChannel#finishConnect 方法结束连接过程。
 
 {% highlight java linenos %}
 protected boolean doConnect(SocketAddress remoteAddress, SocketAddress localAddress) 
