@@ -1,9 +1,11 @@
 ---
 layout: default
 ---
+<span>{{ post.last_modified_at | date: "%F" }}</span> 
 <div id="post">
 {{ content }}
 </div>
+<span>{{ post.last_modified_at | date: "%F" }}</span> 
 <div class="post-info">本文链接 &raquo; <a id="permalink" href="{{ page.url }}">{{ page.title }}</a></div>
 <hr />
 <div id="related">
