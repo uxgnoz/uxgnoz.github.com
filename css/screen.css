@@ -226,7 +226,7 @@ figure > pre {
   padding: 5px 5px 5px 5px;
   line-height: 20px;
   font-family: 'Courier', '宋体', sans-serif;
-  overflow-x: auto;
+  /* overflow-x: auto; */
 }
 
 /* terminal */
