@@ -1,12 +1,13 @@
 ---
 layout: default
 ---
-<span>{{ post.last_modified_at | date: "%F" }}</span> 
 <div id="post">
 {{ content }}
 </div>
-<span>{{ post.last_modified_at | date: "%F" }}</span> 
-<div class="post-info">本文链接 &raquo; <a id="permalink" href="{{ page.url }}">{{ page.title }}</a></div>
+<div class="post-info">本文链接 
+  <span style='color:#f99157'> &raquo; </span>  
+  <a id="permalink" href="{{ page.url }}">{{ page.title }}</a>。
+</div>
 <hr />
 <div id="related">
   <h2>相关文章</h2>
