@@ -23,13 +23,17 @@ private Entry tailEntry;
 private int flushed;
 {% endhighlight %}
 
-它们把整个链表分成了 2 个区间，[flushedEntry, unflushedEntry) 和 [unflushedEntry, tailEntry]。指针 tailEntry 为尾指针，方便往链表尾部添加 Entry。flushedEntry 要么为 null，说明还没有调用 ChannelOutboundBuffer#flush 操作，此时 unflushedEntry 为头指针；要么充当头指针，此时区间 [flushedEntry, unflushedEntry) 为已 flush 数据，字段 flushed 记录该区间大小。
+它们把整个链表分成了 2 个区间，*flush 区间* [`flushedEntry`, `unflushedEntry`) 和 *非 flush 区间* [`unflushedEntry, tailEntry`]。
+
+`flushedEntry` 要么为 null，说明还没有调用 ChannelOutboundBuffer#flush 操作，此时 `unflushedEntry` 为头指针；要么充当头指针，此时区间 [`flushedEntry`, `unflushedEntry`) 为已 flush 数据，字段 flushed 记录该区间大小。
+
+`tailEntry` 为尾指针，方便往链表尾部添加 Entry。
 
 ------
 
 ## 0x02 ChannelOutboundBuffer#addMessage
 
-ChannelOutboundBuffer#addMessage 在链表尾部添加 Entry。
+ChannelOutboundBuffer#addMessage 在链表尾部添加一个 Entry。
 
 {% highlight java linenos %}
 public void addMessage(Object msg, int size, ChannelPromise promise) {
@@ -49,9 +53,19 @@ public void addMessage(Object msg, int size, ChannelPromise promise) {
 }
 {% endhighlight %}
 
-在方法 #incrementPendingOutboundBytes() 中修改缓存中的数据大小 totalPendingSize 。如果 totalPendingSize 大于 channel 配置的写缓冲区高水位线，则触发 ChannelPipeline 的 ChannelWritabilityChanged 事件，禁止继续写入。
+方法 #incrementPendingOutboundBytes 修改缓冲区中的数据量 `totalPendingSize` 。如果 `totalPendingSize` 大于 channel 配置的*写缓冲区高水位线*，则触发 ChannelPipeline 的 *ChannelWritabilityChanged 事件*，禁止继续写入。
 
 {% highlight java linenos %}
+// totalPendingSize 原子修改器
+private static final 
+AtomicLongFieldUpdater<ChannelOutboundBuffer> 
+TOTAL_PENDING_SIZE_UPDATER =
+        AtomicLongFieldUpdater.newUpdater(ChannelOutboundBuffer.class, "totalPendingSize");
+
+// 出站缓冲区中的数据量
+@SuppressWarnings("UnusedDeclaration")
+private volatile long totalPendingSize;
+
 private void incrementPendingOutboundBytes(long size, boolean invokeLater) {
     if (size == 0) {
         return;
@@ -83,9 +97,9 @@ private void setUnwritable(boolean invokeLater) {
 
 ## 0x03 ChannelOutboundBuffer#addFlush
 
-ChannelOutboundBuffer#addFlush 把当前链表中处于 [unflushedEntry, tailEntry] 的 Entry 逐个加入到 [flushedEntry, unflushedEntry) 区间。
+ChannelOutboundBuffer#addFlush 把当前链表中处于*非 flush 区间* [`unflushedEntry`, `tailEntry`] 的 Entry 逐个加入到*flush 区间* [flushedEntry, unflushedEntry) 中。
 
-遍历的过程当中，那些 promise 不能设置成 uncancellable 的 Entry ，调用 Entry#cancel 回收内存并减少 totalPendingSize 。如果 totalPendingSize 小于 channel 配置的写缓冲区低水位线，则触发 ChannelPipeline 的 ChannelWritabilityChanged 事件，设置可写。最后置 unflushedEntry 为 null。
+遍历的过程当中，那些 promise 不能设置成*不可撤销*的 Entry ，调用 Entry#cancel 回收内存并减少 `totalPendingSize` 。如果 `totalPendingSize` 小于 channel 配置的*写缓冲区低水位线*，则触发 ChannelPipeline 的 *ChannelWritabilityChanged 事件*，设置可写。最后置 `unflushedEntry` 为 null。
 
 {% highlight java linenos %}
 public void addFlush() {
@@ -314,17 +328,17 @@ public void removeBytes(long writtenBytes) {
 
 ## 0x09 ChannelOutboundBuffer#nioBuffers
 
-ChannelOutboundBuffer#nioBuffers(int maxCount, long maxBytes) 返回区间 [flushedEntry, unflushedEntry) 上Entry#msg 中的底层数据载体 ByteBufer 的数组。 
+ChannelOutboundBuffer#nioBuffers 返回*flush 区间*上 Entry#msg 中的底层数据载体 ByteBufer 的数组。 
 
-Entry 中的数据存放在一个或多个 ByteBuf 中，而一个 ByteBuf 底层由一个或多个 ByteBuffer 组成（简单理解）。最终返回的 ByteBuffer 数组存放在线程本地变量中。
+Entry 中的数据一般存放在 ByteBuf 中，而一个 ByteBuf 底层由一个或多个 ByteBuffer 组成（简单理解）。最终返回的 ByteBuffer 数组存放在线程本地变量中。
 
 
-* *maxCount* 为 ByteBufer[] 最大长度，
-* *nioBufferCount* 为 ByteBufer[] 实际长度；
-* *maxBytes* 为 ByteBufer[] 中数据最大值字节数；
-* *nioBufferSize* 为 ByteBufer[] 中数据实际字节数。 
+* `maxCount` 为 ByteBufer[] 最大长度，
+* `nioBufferCount` 为 ByteBufer[] 实际长度；
+* `maxBytes` 为 ByteBufer[] 中数据最大值字节数；
+* `nioBufferSize` 为 ByteBufer[] 中数据实际字节数。 
 
-由于 *maxCount* 和 *maxBytes* 的存在，很多时候只能返回区间  [flushedEntry, unflushedEntry) 上的一`部分数据`，甚至`某个 Entry 的一部分数据`。
+由于 `maxCount` 和 `maxBytes` 的存在，很多时候只能返回*flush 区间*上的*一部分 Entry 的数据*，甚至*某个 Entry 中的一部分数据*。
 
 > 部分操作系统的 writeX() 系统调用最大只能允许 Integer.MAX_VALUE 字节的数据写入。
 
@@ -337,51 +351,65 @@ public ByteBuffer[] nioBuffers(int maxCount, long maxBytes) {
     // ByteBufer[] 实际长度
     int nioBufferCount = 0;
     final InternalThreadLocalMap threadLocalMap = InternalThreadLocalMap.get();
+    // 获取线程本地缓存中的数组，应该是上一次调用本方法时放入的 ByteBuffer
     ByteBuffer[] nioBuffers = NIO_BUFFERS.get(threadLocalMap);
     Entry entry = flushedEntry;
+    // 遍历整个 flush 区间
     while (isFlushedEntry(entry) && entry.msg instanceof ByteBuf) {
-        if (!entry.cancelled) {
+        if (!entry.cancelled) { // 排除已取消的 Entry
             ByteBuf buf = (ByteBuf) entry.msg;
             final int readerIndex = buf.readerIndex();
+            // 数据大小
             final int readableBytes = buf.writerIndex() - readerIndex;
 
             if (readableBytes > 0) {
-                // 部分操作系统的 writeX() 系统调用最大只能允许 Integer.MAX_VALUE 字节的数据写入
-                // - https://www.freebsd.org/cgi/man.cgi?query=write&sektion=2
-                // - http://linux.die.net/man/2/writev
+                // 数组数据量控制
+                // 注意防止溢出而没有这样判断：maxBytes < nioBufferSize + readableBytes
                 if (maxBytes - readableBytes < nioBufferSize && nioBufferCount != 0) {
                     break;
                 }
+                // 累计数据量大小
                 nioBufferSize += readableBytes;
-                // msg 中 ByteBuffer 的数据量
+
                 int count = entry.count;
-                if (count == -1) {
-                    //noinspection ConstantValueVariableUse
+                if (count == -1) {  
+                    // -1 说明还没有被缓存
+                    // 缓存 msg 中 ByteBuffer 的数量到 entry.count
                     entry.count = count = buf.nioBufferCount();
                 }
+                // 计算加入 msg 中的 (ByteBuffer)s 之后的数组大小
                 int neededSpace = min(maxCount, nioBufferCount + count);
+                // 超出现有大小，需要扩容
                 if (neededSpace > nioBuffers.length) {
+                    // 数组扩容
                     nioBuffers = expandNioBufferArray(nioBuffers, neededSpace, nioBufferCount);
+                    // 扩容后写回本地线程缓存
                     NIO_BUFFERS.set(threadLocalMap, nioBuffers);
                 }
-                if (count == 1) {
+                
+                if (count == 1) { 
+                    // msg 中只有 1 个 ByteBuffer
                     ByteBuffer nioBuf = entry.buf;
                     if (nioBuf == null) {
-                        // cache ByteBuffer as it may need to create a new ByteBuffer 
-                        // instance if its a derived buffer
+                        // 缓存 msg 中的 ByteBuffer 到 entry.buf
                         entry.buf = nioBuf = buf.internalNioBuffer(readerIndex, readableBytes);
                     }
+                    // ByteBuffer 加入返回数组 ByteBuffer[]
                     nioBuffers[nioBufferCount++] = nioBuf;
-                } else {
+                } 
+                // msg 中有多个 ByteBuffer
+                else {   
                     ByteBuffer[] nioBufs = entry.bufs;
                     if (nioBufs == null) {
-                        // cached ByteBuffers as they may be expensive to create in terms
-                        // of Object allocation
+                        // 缓存 msg 中的 (ByteBuffer)s 到 entry.bufs
                         entry.bufs = nioBufs = buf.nioBuffers();
                     }
+
+                    // 依次加入有数据的 ByteBuffer 到返回数组 ByteBuffer[]
                     for (int i = 0; i < nioBufs.length && nioBufferCount < maxCount; ++i) {
                         ByteBuffer nioBuf = nioBufs[i];
                         if (nioBuf == null) {
+                            // 一旦为 null，后面的就不用管了，ByteBuf 的具体实现以后分析
                             break;
                         } else if (!nioBuf.hasRemaining()) {
                             // 忽略没有数据可读的 nioBuf
@@ -390,6 +418,7 @@ public ByteBuffer[] nioBuffers(int maxCount, long maxBytes) {
                         nioBuffers[nioBufferCount++] = nioBuf;
                     }
                 }
+                // 数组大小控制
                 if (nioBufferCount == maxCount) {
                     break;
                 }
@@ -401,6 +430,25 @@ public ByteBuffer[] nioBuffers(int maxCount, long maxBytes) {
     this.nioBufferSize = nioBufferSize;
 
     return nioBuffers;
+}
+
+// 翻倍扩容
+private static ByteBuffer[] expandNioBufferArray(ByteBuffer[] array, 
+        int neededSpace, int size) {
+    int newCapacity = array.length;
+    do {
+        newCapacity <<= 1;
+
+        if (newCapacity < 0) {
+            throw new IllegalStateException();
+        }
+
+    } while (neededSpace > newCapacity);
+
+    ByteBuffer[] newArray = new ByteBuffer[newCapacity];
+    System.arraycopy(array, 0, newArray, 0, size);
+
+    return newArray;
 }
 {% endhighlight %}
 
