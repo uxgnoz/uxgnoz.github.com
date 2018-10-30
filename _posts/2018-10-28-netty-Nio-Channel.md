@@ -550,7 +550,157 @@ protected final void clearOpWrite() {
 }
 {% endhighlight %}
 
-### 0x0402 NioSocketChannel
+### 0x0402 AbstractNioByteChannel$NioByteUnsafe
+
+方法 #isAllowHalfClosure 判断是否允许半关闭。
+
+方法 #read 执行流程：
+
+1. 校验输入流是否已关闭，如果已关闭，则取消`读操作`等待标志并立即返回；
+2. 分配 byteBuf；
+3. 调用子类具体实现 #doReadBytes 读入数据到 byteBuf，并更新读取字节数到 allocHandle#lastBytesRead；
+4. 如果没有读到数据，则释放 byteBuf；如果读到 EOF，设置 readPending 为 false；跳出循环；
+5. 调用 allocHandle#incMessagesRead，读取记录数增加 1；设置 readPending 为 false；往通道中发送 ChannelRead 事件；
+6. 调用 allocHandle#continueReading 判断是否需要继续读取数据，如果返回 true 则回到第 2 步；
+7. 循环读取结束，往通道中发送 ChannelReadComplete 事件；
+8. 如果由于读到数据流 EOF 而导致读取循环结束，调用 #closeOnRead， 视 channel 配置选择关闭输入流或关闭整个通道；
+9. 最后，如果 readPending 为 false 且没有配置自动读，调用 #removeReadOp 移除本通道的关注事件。
+
+
+{% highlight java linenos %}
+// 读数据时出错导致输入流已关闭 
+private boolean inputClosedSeenErrorOnRead;
+
+// AbstractNioByteChannel#shouldBreakReadReady
+// 是否结束`读操作`
+final boolean shouldBreakReadReady(ChannelConfig config) {
+    return isInputShutdown0() 
+            && (inputClosedSeenErrorOnRead || !isAllowHalfClosure(config)); 
+}
+
+public final void read() {
+    final ChannelConfig config = config();
+    if (shouldBreakReadReady(config)) {
+        clearReadPending();
+        return;
+    }
+    final ChannelPipeline pipeline = pipeline();
+    final ByteBufAllocator allocator = config.getAllocator();
+    final RecvByteBufAllocator.Handle allocHandle = recvBufAllocHandle();
+    allocHandle.reset(config);
+
+    ByteBuf byteBuf = null;
+    boolean close = false;
+    try {
+        do {
+            byteBuf = allocHandle.allocate(allocator);
+            allocHandle.lastBytesRead(doReadBytes(byteBuf));
+            if (allocHandle.lastBytesRead() <= 0) {
+                // nothing was read. release the buffer.
+                byteBuf.release();
+                byteBuf = null;
+                close = allocHandle.lastBytesRead() < 0;
+                if (close) {
+                    // There is nothing left to read as we received an EOF.
+                    readPending = false;
+                }
+                break;
+            }
+
+            allocHandle.incMessagesRead(1);
+            readPending = false;
+            pipeline.fireChannelRead(byteBuf);
+            byteBuf = null;
+        } while (allocHandle.continueReading());
+
+        allocHandle.readComplete();
+        pipeline.fireChannelReadComplete();
+
+        if (close) {
+            closeOnRead(pipeline);
+        }
+    } catch (Throwable t) {
+        handleReadException(pipeline, byteBuf, t, close, allocHandle);
+    } finally {
+        // Check if there is a readPending which was not processed yet.
+        // This could be for two reasons:
+        // * The user called Channel.read() or ChannelHandlerContext.read() in channelRead(...) method
+        // * The user called Channel.read() or ChannelHandlerContext.read() in channelReadComplete(...) method
+        //
+        // See https://github.com/netty/netty/issues/2254
+        if (!readPending && !config.isAutoRead()) {
+            removeReadOp();
+        }
+    }
+}
+
+private void closeOnRead(ChannelPipeline pipeline) {
+    if (!isInputShutdown0()) {
+        if (isAllowHalfClosure(config())) {
+            shutdownInput();
+            pipeline.fireUserEventTriggered(ChannelInputShutdownEvent.INSTANCE);
+        } else {
+            close(voidPromise());
+        }
+    } else {
+        inputClosedSeenErrorOnRead = true;
+        pipeline.fireUserEventTriggered(ChannelInputShutdownReadComplete.INSTANCE);
+    }
+}
+{% endhighlight %}
+
+方法 #handleReadException 处理读取异常。
+
+1. 如果出异常前 byteBuf 中已读取了部分数据，设置 readPending 为 false，往通道中发送 ChannelRead 事件，否则释放 byteBuf；
+2. 往通道中发送 ChannelReadComplete 事件；
+3. 往通道中发送 ExceptionCaught 事件；
+4. 如果输入流返回了 EOF 或者出现了 IO 异常，调用 #closeOnRead，视 channel 配置选择关闭输入流或关闭整个通道；
+
+{% highlight java linenos %}
+private void handleReadException(ChannelPipeline pipeline, ByteBuf byteBuf, 
+        Throwable cause, boolean close, RecvByteBufAllocator.Handle allocHandle) {
+    if (byteBuf != null) {
+        if (byteBuf.isReadable()) {
+            readPending = false;
+            pipeline.fireChannelRead(byteBuf);
+        } else {
+            byteBuf.release();
+        }
+    }
+    allocHandle.readComplete();
+    pipeline.fireChannelReadComplete();
+    pipeline.fireExceptionCaught(cause);
+    if (close || cause instanceof IOException) {
+        closeOnRead(pipeline);
+    }
+}
+{% endhighlight %}
+
+方法 #closeOnRead，视 channel 配置选择关闭输入流或关闭整个通道。
+
+{% highlight java linenos %}
+private void closeOnRead(ChannelPipeline pipeline) {
+    // 输入流未关闭
+    if (!isInputShutdown0()) {  
+        // 允许半关闭
+        if (isAllowHalfClosure(config())) {
+            shutdownInput();
+            pipeline.fireUserEventTriggered(ChannelInputShutdownEvent.INSTANCE);
+        } 
+        // 不允许半关闭
+        else {
+            close(voidPromise());
+        }
+    } 
+    // 输入流已关闭
+    else { 
+        inputClosedSeenErrorOnRead = true;
+        pipeline.fireUserEventTriggered(ChannelInputShutdownReadComplete.INSTANCE);
+    }
+}
+{% endhighlight %}
+
+### 0x0403 NioSocketChannel
 
 作为 AbstractNioChannel#doConnect 的具体实现，调用了低层 SocketChannel#connect 方法，向服务端发起连接。 由于 Netty 中的多路复用通道总是被设置成非阻塞模式，因此 #connect 方法总是反回 false（？），这时需要在 selectionKey 中加入事件类型 *SelectionKey.OP_CONNECT*。在执行下一轮 #select 后，一旦出现该类事件，说明*连接已完成*，可以调用 SocketChannel#finishConnect 方法结束连接过程。
 
@@ -587,9 +737,91 @@ protected void doFinishConnect() throws Exception {
 }
 {% endhighlight %}
 
-
+NioSocketChannel#doWrite 覆写了上面的 AbstractNioByteChannel#doWrite 方法。
 
 {% highlight java linenos %}
+protected void doWrite(ChannelOutboundBuffer in) throws Exception {
+    SocketChannel ch = javaChannel();
+    int writeSpinCount = config().getWriteSpinCount();
+    do {
+        if (in.isEmpty()) {
+            // All written so clear OP_WRITE
+            clearOpWrite();
+            // Directly return here so incompleteWrite(...) is not called.
+            return;
+        }
+
+        // Ensure the pending writes are made of ByteBufs only.
+        int maxBytesPerGatheringWrite = ((NioSocketChannelConfig) config).getMaxBytesPerGatheringWrite();
+        ByteBuffer[] nioBuffers = in.nioBuffers(1024, maxBytesPerGatheringWrite);
+        int nioBufferCnt = in.nioBufferCount();
+
+        // Always us nioBuffers() to workaround data-corruption.
+        // See https://github.com/netty/netty/issues/2761
+        switch (nioBufferCnt) {
+            case 0:
+                // We have something else beside ByteBuffers to write so fallback to normal writes.
+                writeSpinCount -= doWrite0(in);
+                break;
+            case 1: {
+                // Only one ByteBuf so use non-gathering write
+                // Zero length buffers are not added to nioBuffers by ChannelOutboundBuffer, so there is no need
+                // to check if the total size of all the buffers is non-zero.
+                ByteBuffer buffer = nioBuffers[0];
+                int attemptedBytes = buffer.remaining();
+                final int localWrittenBytes = ch.write(buffer);
+                if (localWrittenBytes <= 0) {
+                    incompleteWrite(true);
+                    return;
+                }
+                adjustMaxBytesPerGatheringWrite(attemptedBytes, localWrittenBytes, maxBytesPerGatheringWrite);
+                in.removeBytes(localWrittenBytes);
+                --writeSpinCount;
+                break;
+            }
+            default: {
+                // Zero length buffers are not added to nioBuffers by ChannelOutboundBuffer, so there is no need
+                // to check if the total size of all the buffers is non-zero.
+                // We limit the max amount to int above so cast is safe
+                long attemptedBytes = in.nioBufferSize();
+                final long localWrittenBytes = ch.write(nioBuffers, 0, nioBufferCnt);
+                if (localWrittenBytes <= 0) {
+                    incompleteWrite(true);
+                    return;
+                }
+                // Casting to int is safe because we limit the total amount of data in the nioBuffers to int above.
+                adjustMaxBytesPerGatheringWrite((int) attemptedBytes, (int) localWrittenBytes,
+                        maxBytesPerGatheringWrite);
+                in.removeBytes(localWrittenBytes);
+                --writeSpinCount;
+                break;
+            }
+        }
+    } while (writeSpinCount > 0);
+
+    incompleteWrite(writeSpinCount < 0);
+}
+{% endhighlight %}
+
+{% highlight java linenos %}
+// 从 javaChannel 中读取数据到 byteBuf
+protected int doReadBytes(ByteBuf byteBuf) throws Exception {
+    final RecvByteBufAllocator.Handle allocHandle = unsafe().recvBufAllocHandle();
+    allocHandle.attemptedBytesRead(byteBuf.writableBytes());
+    return byteBuf.writeBytes(javaChannel(), allocHandle.attemptedBytesRead());
+}
+
+// 把 byteBuf 中的数据写出 javaChannel
+protected int doWriteBytes(ByteBuf buf) throws Exception {
+    final int expectedWrittenBytes = buf.readableBytes();
+    return buf.readBytes(javaChannel(), expectedWrittenBytes);
+}
+
+// 把 FileRegion 中的数据写出到 javjaChannel
+protected long doWriteFileRegion(FileRegion region) throws Exception {
+    final long position = region.transferred();
+    return region.transferTo(javaChannel(), position);
+}
 {% endhighlight %}
 
 {% highlight java linenos %}

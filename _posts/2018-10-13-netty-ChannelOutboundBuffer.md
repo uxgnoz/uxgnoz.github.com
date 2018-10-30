@@ -318,9 +318,13 @@ ChannelOutboundBuffer#nioBuffers(int maxCount, long maxBytes) 返回区间 [flus
 
 Entry 中的数据存放在一个或多个 ByteBuf 中，而一个 ByteBuf 底层由一个或多个 ByteBuffer 组成（简单理解）。最终返回的 ByteBuffer 数组存放在线程本地变量中。
 
-*nioBufferCount* 为数组大小，而 *nioBufferSize* 数组中的所有待发送数据的大小。 
 
-*maxCount* 为 ByteBufer[] 最大长度，而 *maxBytes* 为 ByteBufer[] 中数据的数据总量最大值。由于 *maxCount* 和 *maxBytes* 的存在，很多时候只能返回区间  [flushedEntry, unflushedEntry) 上的一`部分数据`，甚至`某个 Entry 的一部分数据`。
+* *maxCount* 为 ByteBufer[] 最大长度，
+* *nioBufferCount* 为 ByteBufer[] 实际长度；
+* *maxBytes* 为 ByteBufer[] 中数据最大值字节数；
+* *nioBufferSize* 为 ByteBufer[] 中数据实际字节数。 
+
+由于 *maxCount* 和 *maxBytes* 的存在，很多时候只能返回区间  [flushedEntry, unflushedEntry) 上的一`部分数据`，甚至`某个 Entry 的一部分数据`。
 
 > 部分操作系统的 writeX() 系统调用最大只能允许 Integer.MAX_VALUE 字节的数据写入。
 
@@ -328,7 +332,9 @@ Entry 中的数据存放在一个或多个 ByteBuf 中，而一个 ByteBuf 底�
 public ByteBuffer[] nioBuffers(int maxCount, long maxBytes) {
     assert maxCount > 0;
     assert maxBytes > 0;
+    // ByteBufer[] 中数据实际字节数
     long nioBufferSize = 0;
+    // ByteBufer[] 实际长度
     int nioBufferCount = 0;
     final InternalThreadLocalMap threadLocalMap = InternalThreadLocalMap.get();
     ByteBuffer[] nioBuffers = NIO_BUFFERS.get(threadLocalMap);
@@ -341,10 +347,13 @@ public ByteBuffer[] nioBuffers(int maxCount, long maxBytes) {
 
             if (readableBytes > 0) {
                 // 部分操作系统的 writeX() 系统调用最大只能允许 Integer.MAX_VALUE 字节的数据写入
+                // - https://www.freebsd.org/cgi/man.cgi?query=write&sektion=2
+                // - http://linux.die.net/man/2/writev
                 if (maxBytes - readableBytes < nioBufferSize && nioBufferCount != 0) {
                     break;
                 }
                 nioBufferSize += readableBytes;
+                // msg 中 ByteBuffer 的数据量
                 int count = entry.count;
                 if (count == -1) {
                     //noinspection ConstantValueVariableUse
@@ -358,8 +367,8 @@ public ByteBuffer[] nioBuffers(int maxCount, long maxBytes) {
                 if (count == 1) {
                     ByteBuffer nioBuf = entry.buf;
                     if (nioBuf == null) {
-                        // cache ByteBuffer as it may need to create a new ByteBuffer instance if its a
-                        // derived buffer
+                        // cache ByteBuffer as it may need to create a new ByteBuffer 
+                        // instance if its a derived buffer
                         entry.buf = nioBuf = buf.internalNioBuffer(readerIndex, readableBytes);
                     }
                     nioBuffers[nioBufferCount++] = nioBuf;
@@ -375,6 +384,7 @@ public ByteBuffer[] nioBuffers(int maxCount, long maxBytes) {
                         if (nioBuf == null) {
                             break;
                         } else if (!nioBuf.hasRemaining()) {
+                            // 忽略没有数据可读的 nioBuf
                             continue;
                         }
                         nioBuffers[nioBufferCount++] = nioBuf;
