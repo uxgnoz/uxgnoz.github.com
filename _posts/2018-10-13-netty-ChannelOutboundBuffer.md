@@ -8,7 +8,7 @@ category: netty
 
 ------
 
-## 综述
+## 0x01 综述
 
 ChannelOutboundBuffer 为 Channel 的数据发送缓冲区，数据封装成以 Entry 节点的形式存放在单向链表中。链表有三个指针：
 
@@ -27,7 +27,7 @@ private int flushed;
 
 ------
 
-## ChannelOutboundBuffer#addMessage
+## 0x02 ChannelOutboundBuffer#addMessage
 
 ChannelOutboundBuffer#addMessage 在链表尾部添加 Entry。
 
@@ -81,7 +81,7 @@ private void setUnwritable(boolean invokeLater) {
 
 ------
 
-## ChannelOutboundBuffer#addFlush
+## 0x03 ChannelOutboundBuffer#addFlush
 
 ChannelOutboundBuffer#addFlush 把当前链表中处于 [unflushedEntry, tailEntry] 的 Entry 逐个加入到 [flushedEntry, unflushedEntry) 区间。
 
@@ -145,7 +145,7 @@ int cancel() {
 
 ------
 
-## ChannelOutboundBuffer#current
+## 0x04 ChannelOutboundBuffer#current
 
 ChannelOutboundBuffer#current 返回 flushedEntry 指向的 Entry 中的数据。
 
@@ -162,7 +162,7 @@ public Object current() {
 
 ------
 
-## ChannelOutboundBuffer#progress
+## 0x05 ChannelOutboundBuffer#progress
 
 ChannelOutboundBuffer#progress 进度通知。如果 flushedEntry 中的 promise 为 ChannelProgressivePromise 类型，则尝试通知进度，也就是当前 Entry 中的数据真正写入 channel 的进度。
 
@@ -181,7 +181,7 @@ public void progress(long amount) {
 
 ------
 
-## ChannelOutboundBuffer#remove
+## 0x06 ChannelOutboundBuffer#remove
 
 ChannelOutboundBuffer#remove  从链表中删除 flushedEntry 指向的 Entry ， flushedEntry 指向下一个 Entry。
 
@@ -232,7 +232,7 @@ private void removeEntry(Entry e) {
 
 ------
 
-## ChannelOutboundBuffer#remove(Throwable cause)
+## 0x07 ChannelOutboundBuffer#remove(Throwable cause)
 
 ChannelOutboundBuffer#remove(Throwable cause) 基本逻辑跟 ChannelOutboundBuffer#remove一致，除了设置 Entry 的 promise 为 fail。
 
@@ -271,7 +271,7 @@ private boolean remove0(Throwable cause, boolean notifyWritability) {
 
 ------
 
-## ChannelOutboundBuffer#removeBytes
+## 0x08 ChannelOutboundBuffer#removeBytes
 
 ChannelOutboundBuffer#removeBytes(long writtenBytes) 从 flushedEntry 指向的 Entry 开始，依次删除数据全部发送完的 Entry，更新部分发送完 Entry 的 readerIndex，并对每个 Entry 中的 promise 发出进度通知。
 
@@ -312,7 +312,7 @@ public void removeBytes(long writtenBytes) {
 
 ------
 
-## ChannelOutboundBuffer#nioBuffers
+## 0x09 ChannelOutboundBuffer#nioBuffers
 
 ChannelOutboundBuffer#nioBuffers(int maxCount, long maxBytes) 返回区间 [flushedEntry, unflushedEntry) 上Entry#msg 中的底层数据载体 ByteBufer 的数组。 
 
@@ -394,7 +394,7 @@ public ByteBuffer[] nioBuffers(int maxCount, long maxBytes) {
 }
 {% endhighlight %}
 
-## ChannelOutboundBuffer#failFlushed
+## 0x0a ChannelOutboundBuffer#failFlushed
 
 删除区间 [flushedEntry, unflushedEntry) 上的 Entry ，并设置 Entry 的 promise 为失败。
 
@@ -419,11 +419,11 @@ void failFlushed(Throwable cause, boolean notify) {
 }
 {% endhighlight %}
 
-## ChannelOutboundBuffer#bytesBeforeWritable
+## 0x0b ChannelOutboundBuffer#bytesBeforeWritable
 
 ChannelOutboundBuffer#isWritable 返回 false 时，totalPendingSize 高于 channel 配置的缓冲区低水位线字节数，否则返回 0。
 
-> 大白话：`写开关`关闭的情况下，需要从缓冲区拿掉多少字节，才能继续写
+> 大白话：`写开关`关闭的情况下，需要从缓冲区拿掉多少字节，才能继续写。
 
 {% highlight java linenos %}
 public long bytesBeforeWritable() {
@@ -439,7 +439,7 @@ public long bytesBeforeWritable() {
 
 ChannelOutboundBuffer#isWritable 返回 true 时，totalPendingSize 低于 channel 配置的缓冲区高水位线字节数，否则返回 0。
 
-> 大白话：`写开关`打开的情况下，还能向缓冲区写多少字节
+> 大白话：`写开关`打开的情况下，还能向缓冲区写多少字节。
 
 {% highlight java linenos %}
 public long bytesBeforeUnwritable() {
