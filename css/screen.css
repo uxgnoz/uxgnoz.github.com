@@ -42,7 +42,7 @@ h2 {
 }
 
 h3 {
-  font-size: 20px; 
+  font-size: 20px;
   font-style: italic;
   margin: 25px 0 15px 5px;
 }
@@ -118,11 +118,11 @@ ul.index_posts span {
   color: #f99157;
   /* font-weight: bold; */
 }
-  
+
 ol, ul {
   margin-left: 40px;
   margin-bottom: 15px;
-}  
+}
 
 /*****************************************************************************/
 /*
@@ -206,7 +206,7 @@ ol, ul {
 /*****************************************************************************/
 
   /* standard */
-  
+
 #post strong {
   /*font-size:14px;*/
   font-weight:900;
@@ -287,7 +287,7 @@ figure > pre {
   font-size: 13px;
 }
 
-strike, linethru {text-decoration:line-through;} 
+strike, linethru {text-decoration:line-through;}
 
 /* #post #tbl table { width:100%; margin-bottom:2em; }
 #post #tbl table td { padding:0.5em; }
@@ -316,35 +316,31 @@ hr {
   font-size: 13px;
   }
 
-/* table { 
-    padding: 0; 
+#post > table {
+    padding: 0;
     border-collapse:collapse;
     border-spacing:0;
     margin-top: 10px;
     margin-bottom: 10px;
     margin-left: 5px;
     font-size: 13px;
-} 
+    min-width: 500px;
+}
 
-th { 
-    font: bold 11px ; 
+#post > table th {
+    border: 1px solid #999;
+    letter-spacing: 2px;
+    padding: 3px 12px 2px 12px;
+    background: rgba(102, 128, 153, 0.0470588);
+}
 
-    border-right: 1px solid #aaaaaa; 
-    border-bottom: 1px solid #aaaaaa; 
-    border-top: 1px solid #aaaaaa; 
-    border-left: 1px solid #aaaaaa; 
-    letter-spacing: 2px; 
-    padding: 8px 12px 3px 12px; 
-    background: #eeeeee url(images/bg_header.jpg) no-repeat; 
-} 
-
-td { 
-    border-right: 1px solid #aaaaaa; 
-    border-bottom: 1px solid #aaaaaa; 
-    background: #fff; 
-    padding: 8px 12px 3px 12px; 
-    border-left: 1px solid #aaaaaa; 
-}  */
+#post > table td {
+    border-right: 1px solid #999;
+    border-bottom: 1px solid #999;
+    background: #fff;
+    padding: 3px 12px 3px 12px;
+    border-left: 1px solid #999;
+}
 
 img {
   box-shadow: 0 0 1px #9797A6;
