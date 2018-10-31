@@ -18,14 +18,14 @@ categories: Visual Stdio
 
 然后我这样：
 
-{% highlight c++ %}
+{% highlight c++  linenos %}
 LPTSTR portStr;
 mVideoServerPort.GetWindowTextW(portStr, 6);
 {% endhighlight%}
 
 VS提示`portStr`未初始化。以我的浅见，这是个指向`char`的指针啊，那这样：
 
-{% highlight c++ %}
+{% highlight c++  linenos %}
 // "char *" 类型的值不能用于初始化 "LPTSTR" 类型的实体
 LPTSTR portStr = new char[6]; 
 // 下面2个貌似ok
@@ -37,7 +37,7 @@ LPTSTR portStr = TCHAR[6];
 
 接下来字符串转换成数字，我在控件中输入`54321`，它却始终只能转换第一个字符，也就是`5`。但是如果我直接把`portStr`的值写死成`“54321”`，转换后的`port`却是对的。这尼玛什么情况？？
 
-{% highlight c++ %}
+{% highlight c++  linenos %}
 int port = atoi((char *) portStr);
 {% endhighlight%}
 
@@ -45,7 +45,7 @@ Google了一下，发现了这个 [atoi only returning first digit of char* para
 
 然后就在一个论坛里面看到类似如下的代码，它调用了`GetWindowText`。抱着试试看的心态，竟然能通过编译，结果还对了。
 
-{% highlight c++ %}
+{% highlight c++ linenos %}
 CString portStr ;
 mVideoServerPort.GetWindowText(portStr);
 
@@ -61,8 +61,8 @@ int port = atoi((char *) W2A(portStr));
 
 调试的时候，每次启动应用程序，都要出现下面窗口，然后就是没完没了的`读条`。
 
-![vs-symbol-loading-dialog](../_images/2015-10-31-vs-symbol-loading-dialog.jpg)
+![vs-symbol-loading-dialog](/images/2015-10-31-vs-symbol-loading-dialog.jpg)
 
 咱也不懂啥是个`符号服务器`，直接忽略之，该勾的勾，该删的删，该清的清。
 
-![vs-options-symbol](../_images/2015-10-31-vs-options-symbol.jpg)
+![vs-options-symbol](/images/2015-10-31-vs-options-symbol.jpg)
