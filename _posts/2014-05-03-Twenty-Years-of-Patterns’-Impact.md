@@ -49,7 +49,7 @@ category: 设计模式
 
 大约在2003年，ESB这个术语，由于描述SOA（面向服务的体系结构）集成平台获得了人们的关注。ESB产品在不同服务之间路由、过滤和转换XML消息；它们代表的是实现Broker模式的传统企业应用集成产品的演变。讽刺的是，尽管ESB产品的目标是整合不同的企业应用，但是缺乏描述这种方案设计的共同词汇。
 
-![图1 Apache Camel核心代码随时间增长情况](http://www.infoq.com/resource/articles/twenty-years-of-patterns-impact/en/resources/Fig2.png)
+![图1 Apache Camel核心代码随时间增长情况](/images/1Fig2-small.png)
 
 图1 Apache Camel核心代码随时间增长情况。Java代码库的线性增长意味着稳定的提交者社区和可持续的发展。JavaScript的代码量在2009年跳跃式增长之后，开始放缓；同样的情况也发生在JavaScript类库和框架的可用性上。
 
@@ -73,11 +73,11 @@ Apache Camel由Maven Central提供的下载量平均每月大概25000次，2013�
 
 融入产品的EIP词汇流行开来之后，有些ESB项目更进一步，在他们的设计工具中，采用EIP模式骨架作为其中的可视语言。例如，在Redhat Fuse集成开发环境或Mule Studio中，开发者可以使用EIP图标语言。跟以前不同，对异步消息解决方案的简单管道过滤器架构风格，努力“可视化编程”的尝试，使模式这种可视化组合显得很自然。图2显示了可视化的Camel路由：它通过消息路由器，把传入的消息转发给两个可能的消息端点之一。现在，ESB开发者可以使用EIP词汇来思考、设计、交流和实现他们的解决方案。
 
-![图2 在Redhat Fuse集成开发环境中](http://www.infoq.com/resource/articles/twenty-years-of-patterns-impact/en/resources/Fig3.jpg)
+![图2 在Redhat Fuse集成开发环境中](/images/Fig3.jpg)
 
 图2 在Redhat Fuse集成开发环境中，使用可视化模式语言创建消息解决方案。消息从基于文件的消息端点发出；在基于内容的路由器中，根据消息内容所指明的城市，转发给两个消息端点之一。基于内容的路由器模式，描述了一种可复用设计：根据消息内容，把消息路由给正确的接受者，
 
-![图3 玩印有EIP的扑克](http://www.infoq.com/resource/articles/twenty-years-of-patterns-impact/en/resources/1Fig4.jpg)
+![图3 玩印有EIP的扑克](/images/1Fig4.jpg)
 
 图3 玩印有EIP的扑克。可视化模式语言允许交互式的、近乎好玩的模式用法。每张牌上都印有模式图标、名称和解决方案。
 
