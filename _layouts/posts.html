@@ -4,9 +4,15 @@ layout: default
 <div id="post">
 {{ content }}
 </div>
-<div class="post-info">本文链接 
+
+<div class="post-info">
+  <time datetime="{{ page.date | date: " %Y-%m-%d " }}">
+      {{ page.date | date: "%B %d, %Y" }}
+  </time><br/>
+  本文链接 
   <span style='color:#f99157'> &raquo; </span>  
-  <a id="permalink" href="{{ page.url }}">{{ page.title }}</a>。
+  <a id="permalink" href="{{ page.url }}">{{ page.title }}</a>。<br/>
+
 </div>
 <hr />
 <div id="related">

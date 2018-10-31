@@ -1,6 +1,6 @@
 ---
 title: Java 8：健壮易用的时间/日期API终于来临
-layout: post
+layout: posts
 categories: java, 日期, API
 ---
 
@@ -49,7 +49,7 @@ categories: java, 日期, API
 
 LocalDate被设计成，它的所有方法，都是常用方法：
 
-{% highlight java %}
+{% highlight java linenos %}
 LocalDate date = LocalDate.of(2014, Month.JUNE, 10); 
 int year = date.getYear(); // 2014 
 Month month = date.getMonth(); // 6月 
@@ -63,7 +63,7 @@ boolean leap = date.isLeapYear(); // false （不是闰年）
 
 在下面的例子中，我们来看看如何操作LocalDate的实例。由于它是不可变类型，每次操作都会产生一个新的实例，而原有实例不收任何影响。
 
-{% highlight java %}
+{% highlight java linenos %}
 LocalDate date = LocalDate.of(2014, Month.JUNE, 10); 
 date = date.withYear(2015); // 2015-06-10 
 date = date.plusMonths(2); // 2015-08-10 
@@ -72,13 +72,13 @@ date = date.minusDays(1); // 2015-08-09
 
 上面这些都很简单，但有时我们需要对日期进行更复杂的修改。`java.time`包含了对此的处理机制：TemporalAdjuster类。时间修改器背后的设计思想是，提供一个预装包的、能操纵日期的功能，比如，根据月份的最后一天获取日期的对象。API提供了一些通用的功能，你可以新增你自己的。修改器的使用很简单，但使用静态导入的方式，更会让你受益：
 
-{% highlight java %}
+{% highlight java linenos %}
 import static java.time.DayOfWeek.* 
 
 import static java.time.temporal.TemporalAdjusters.* 
 
 LocalDate date = LocalDate.of(2014, Month.JUNE, 10); 
-date = date.with(lastDayOfMonth()); 像所有主要的时间/日期类
+date = date.with(lastDayOfMonth()); // 像所有主要的时间/日期类
 date = date.with(nextOrSame(WEDNESDAY));
 {% endhighlight %}
 
@@ -127,7 +127,7 @@ LocalTime是值类型，且跟日期和时区没有关联。当我们对时间�
 
 LocalTime的用法跟LocalDate相似：
 
-{% highlight java  %}
+{% highlight java linenos %}
 LocalTime time = LocalTime.of(20, 30); 
 int hour = date.getHour(); // 20 
 int minute = date.getMinute(); // 30 
@@ -145,7 +145,7 @@ time = time.plusMinutes(3); // 20:33:06
 
 LocalDateTime可以直接创建，或者组合时间和日期：
 
-{% highlight java  %}
+{% highlight java linenos %}
 LocalDateTime dt1 = LocalDateTime.of(2014, Month.JUNE, 10, 20, 30); 
 LocalDateTime dt2 = LocalDateTime.of(date, time); 
 LocalDateTime dt3 = date.atTime(20, 30); 
@@ -177,7 +177,7 @@ LocalDateTime的其他方法跟LocalDate和LocalTime相似。这种相似的方�
 
 `java.time` 包通过值类型Instant提供机器视图。Instant表示时间线上的一点，而不需要任何上下文信息，例如，时区。概念上讲，它只是简单的表示自1970年1月1日0时0分0秒（UTC）开始的秒数。因为`java.time`包是基于纳秒计算的，所以Instant类的精度可以达到纳秒级。
 
-{% highlight java  %}
+{% highlight java linenos %}
 Instant start = Instant.now(); 
 // perform some calculation 
 Instant end = Instant.now(); 
@@ -188,7 +188,7 @@ Instant典型的用法是，当你需要记录事件的发生时间，而不需�
 
 Instant很多有趣的地方在于，你不能对它做什么，而不是你能做什么。例如，下面的几行代码会抛出异常：
 
-{% highlight java  %}
+{% highlight java linenos %}
 instant.get(ChronoField.MONTH_OF_YEAR); 
 instant.plus(6, ChronoUnit.YEARS); 
 {% endhighlight %}
@@ -203,7 +203,7 @@ instant.plus(6, ChronoUnit.YEARS);
 
 下面的英国布鲁斯托交易所的时钟照片，显示了时区导致的最初混乱的一个例子。红色的指针显示格林威治时间，而黑色指针显示布鲁斯托时间，它们相差10分钟。
 
-![英国布鲁斯托交易所的时钟照片](http://cdn.infoq.com/statics_s2_20151020-0055-1/resource/articles/java.time/en/resources/2Fig1.jpg)
+![英国布鲁斯托交易所的时钟照片](/images/clock.jpg)
 
 在技术的推动下，标准的时区系统慢慢演进，最终替代了老旧的本地太阳法计时。然而，关键的事实是，时区也是政治的产物。它们被用来显示对一个地区的政治控制，例如，最近的克里米亚时改为莫斯科时。一旦和政治挂钩，相关的规则常常不合逻辑。
 
@@ -217,7 +217,7 @@ instant.plus(6, ChronoUnit.YEARS);
 
 ZoneDateTime负责处理面向人类的（台历和挂钟上看到的）时间和面向机器的时间（始终连续增长的秒数）之间的转换。因此，你可以通过本地时间或时间点来创建ZoneDateTime实例：
 
-{% highlight java  %}
+{% highlight java linenos %}
 ZoneId zone = ZoneId.of("Europe/Paris"); 
 
 LocalDate date = LocalDate.of(2014, Month.JUNE, 10); 
@@ -233,7 +233,7 @@ ZonedDateTime在它的工厂方法和控制方法中处理了这些。例如，�
 
 下面是关于夏令时的最后一个小提示。如果你想证明，在夏令时结束那天的重叠时段，你有考虑过什么情况会发生，你可以用这两个专门处理重叠时段的方法之一：
 
-{% highlight java  %}
+{% highlight java linenos %}
 zdt = zdt.withEarlierOffsetAtOverlap(); 
 zdt = zdt.withLaterOffsetAtOverlap(); 
 {% endhighlight %}
@@ -252,7 +252,7 @@ Period类表示以年、月、日衡量的时长。例如，“3年2个月零6�
 
 它们可以作为参数，传给主要的时间/日期类的增加或减少时间的方法：
 
-{% highlight java  %}
+{% highlight java linenos %}
 Period sixMonths = Period.ofMonths(6); 
 LocalDate date = LocalDate.now(); 
 LocalDate future = date.plus(sixMonths); 
@@ -272,7 +272,7 @@ LocalDate future = date.plus(sixMonths);
 
 很典型的，一旦有了格式化器，你可以把它传递给主要的时间/日期类的相关方法：
 
-{% highlight java  %}
+{% highlight java linenos %}
 DateTimeFormatter f = DateTimeFormatter.ofPattern("dd/MM/uuuu"); 
 LocalDate date = LocalDate.parse("24/06/2014", f); 
 String str = date.format(f);

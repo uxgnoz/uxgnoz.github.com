@@ -14,7 +14,7 @@ categories: java, Lambda
 
 你经常会想，如果可以在Lambda表达式里访问外部方法或类中变量就好了。看下面的例子：
 
-{% highlight java %}
+{% highlight java linenos %}
 public static void repeatMessage(String text, int count) {
      Runnable r = () -> {
         for (int i = 0; i < count; i++) {
@@ -45,7 +45,7 @@ repeatMessage("Hello", 1000);
 
 就像已经看到的，Lambda表达式可以捕获外部作用域的变量值。在Java中，为了保证被捕获的变量值是定义良好的，它有一个很重要的约束。在Lambda表达式里，只能引用值不变的变量。比如，下面的用法就不对：
 
-{% highlight java %}
+{% highlight java linenos %}
 public static void repeatMessage(String text, int count) {
      Runnable r = () -> {
         while (count > 0) {
@@ -60,7 +60,7 @@ public static void repeatMessage(String text, int count) {
 
 这样做，是有原因的。因为，在Lambda表达式中改变自由变量的值，不是线程安全的。比如，考虑一系列的并发任务，每一个都更新共享的计数器matches：
 
-{% highlight java %}
+{% highlight java linenos %}
 int matches = 0;
 for (Path p : files) {
     // Illegal to mutate matches
@@ -75,7 +75,7 @@ for (Path p : files) {
 
 同样的，尽管不正确，并发改变共享变量的值是相当合法的。下面的例子就是合法但不正确的：
 
-{% highlight java %}
+{% highlight java linenos %}
 List< Path > matches = new ArrayList<>();
 for (Path p : files)
     new Thread(() -> { if (p has some property) matches.add(p); }).start();
@@ -86,7 +86,7 @@ for (Path p : files)
 值的计数和搜集是存在线程安全的方式的。你可能想要用stream来收集特定属性的值。在其他情形下，你可能会使用线程安全的计数器和集合。
 跟内部类相似，有一个变通的方式，可以让Lambda表达式更新外部本地作用域的计数器的值。比如，用一个长度为一的数组：
 
-{% highlight java %}
+{% highlight java linenos %}
 int[] counter = new int[1];
 button.setOnAction(event -> counter[0]++);
 {% endhighlight %}
@@ -94,7 +94,7 @@ button.setOnAction(event -> counter[0]++);
 当然，这样的代码不是线程安全的。也许，对一个按钮的回调方法来说，是无所谓的。但通常，使用这种方式之前，你应该多考虑考虑。
 Lambda表达式的语句体和嵌套代码块的作用域是一样的。变量名冲突和隐藏规则同样适用。在Lambda表达式里声明的参数或本地变量跟外部本地变量同名，是非法的。
 
-{% highlight java %}
+{% highlight java linenos %}
 Path first = Paths.get("/usr/bin");
 Comparator< String > comp =
     (first, second) -> Integer.compare(first.length(), second.length());
@@ -103,7 +103,7 @@ Comparator< String > comp =
     
 在方法里，你不能有两个同名的本地变量。Lambda表达式同样如此。在Lambda表达式里，当你使用“this”时，你引用的是创建Lambda表达式方法的this参数。例如：
 
-{% highlight java %}
+{% highlight java linenos %}
 public class Application() {
      public void doWork() {
         Runnable runner = () -> {
@@ -123,14 +123,14 @@ public class Application() {
 ## 默认方法
 很多编程语言在它们的集合类库中集成了函数表达式。这导致它们的代码，比使用外循环更短，更易于理解。例如：
 
-{% highlight java %}
+{% highlight java linenos %}
 for (int i = 0; i < list.size(); i++)
     System.out.println(list.get(i));
 {% endhighlight %}
     
 有一个更好的方法。类库的设计者们可以提供一个forEach方法，它把函数应用到所包含的每一个元素上。然后我们就可以简单的调用：
 
-{% highlight java %}
+{% highlight java linenos %}
 list.forEach(System.out::println);
 {% endhighlight %}
 
@@ -139,7 +139,7 @@ list.forEach(System.out::println);
 Java的设计者们决定一劳永逸的解决这个问题：他们允许接口中的方法拥有具体实现（称为默认方法）！这些方法可以安全的加进现存接口中。下面我们来看看默认方法的细节。在Java 8里，forEach方法被加进了Collection的父接口Iterable接口中，现在我来说说这样做的机制。
 看如下的接口：
 
-{% highlight java %}
+{% highlight java linenos %}
 interface Person {
     long getId();
     default String getName() { return "John Q. Public"; }
@@ -157,7 +157,7 @@ interface Person {
 
 让我们看看第二条规则。比如拥有getName方法的另一个接口：
 
-{% highlight java %}
+{% highlight java linenos %}
 interface Named {
     default String getName() { return getClass().getName() + "_" + hashCode(); }
 }
@@ -165,7 +165,7 @@ interface Named {
 
 如果你写一个实现接口Person和Named的类，会发生什么呢？
 
-{% highlight java %}
+{% highlight java linenos %}
 class Student implements Person, Named {
      // . . .
 }
@@ -173,7 +173,7 @@ class Student implements Person, Named {
 
 Student类继承了两个实现不一致的getName方法。Java编译器会报错，并把它留给开发者去解决冲突，而不是随便选一个来使用。在Student类中，简单的提供一个getName方法就可以了。至于方法里的实现，你可以在冲突的方法中任选一个。
 
-{% highlight java %}
+{% highlight java linenos %}
 class Student implements Person, Named {
      public String getName() { returnPerson.super.getName(); }
      // . . .
@@ -182,7 +182,7 @@ class Student implements Person, Named {
 
 现在假设接口Named没有提供getName方法的默认实现：
 
-{% highlight java %}
+{% highlight java linenos %}
 interface Named {
      String getName();
 }
@@ -193,7 +193,7 @@ interface Named {
 如果接口都没有提供相同方法的默认实现，那么这跟Java 8之前的时代是一样的，没有冲突。实现类有两个选择：实现这个方法，或者不实现它。后一种情形下，实现类本身就会是一个抽象类。
 我刚刚讨论了接口之间的方法冲突。现在看看一个类继承了一个父类，并且实现了一个接口。它从两者继承了同一个方法。例如，Person是一个类，Student被定义成：
 
-{% highlight java %}
+{% highlight java linenos %}
 class Student extends Person implements Named { … }
 {% endhighlight %}
 
@@ -208,7 +208,7 @@ class Student extends Person implements Named { … }
 
 看看Paths类，它只有几个工厂方法。你可以从一系列的字符串中，创建一个路径，比如Paths.get(“jdk1.8.0″, “jre”, “bin”)。在Java 8中，你可以把这个方法加到Path接口中：
 
-{% highlight java %}
+{% highlight java linenos %}
 public interface Path {
     public static Path get(String first, String… more) {
         return FileSystems.getDefault().getPath(first, more);
@@ -221,20 +221,20 @@ public interface Path {
 
 当你在看Collections类的时候，你会看到两类方法。一类这样的方法：
 
-{% highlight java %}
+{% highlight java linenos %}
 public static void shuffle(List< ? > list);
 {% endhighlight %}
 
 将会作为List接口的默认方法工作的很好：
 
-{% highlight java %}
+{% highlight java linenos %}
 public default void shuffle();
 {% endhighlight %}
 
 你就可以在任何列表上简单的调用list.shuffle()。
 对工厂方法来说，那样是不行的，因为你没有调用方法的对象。这时候接口中的静态方法就有用武之地了。例如：
 
-{% highlight java %}
+{% highlight java linenos %}
 public static < T > List< T > nCopies(int n, T o)
 // Constructs a list of n instances of o
 {% endhighlight %}
@@ -250,7 +250,7 @@ public static < T > List< T > nCopies(int n, T o)
 
 本文中，我先用Lambda表达式
 
-{% highlight java %}
+{% highlight java linenos %}
 (first, second) -> Integer.compare(first.length(), second.length());
 {% endhighlight %}
 

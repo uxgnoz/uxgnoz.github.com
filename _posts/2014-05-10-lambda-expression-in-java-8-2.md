@@ -10,9 +10,9 @@ categories: java, Lambda
 
 *Java 8中，最重要的一个改变让代码更快、更简洁，并向FP（函数式编程）打开了方便之门。下面我们来看看，它是如何做到的。*
 
-[上一篇中](http://iosched.com/lambda-expression-in-java-8-1/)，你看到了Java中Lambda表达式的一种形式：参数 + “->” + 表达式。如果代码实现的逻辑一条语句完成不了，你可以写成类似方法的形式：代码写在“{}”中，再加上显式的return语句。例如：
+[上一篇中](/lambda-expression-in-java-8-1/)，你看到了Java中Lambda表达式的一种形式：参数 + “->” + 表达式。如果代码实现的逻辑一条语句完成不了，你可以写成类似方法的形式：代码写在“{}”中，再加上显式的return语句。例如：
 
-{% highlight java %}
+{% highlight java linenos %}
 (String first, String second) -> {
      if (first.length() < second.length()) return -1;
      else if (first.length() > second.length()) return 1;
@@ -22,12 +22,12 @@ categories: java, Lambda
 
 就算一个Lambda表达式没有参数，你也需要保留空的小括号，就像没有参数的方法一样：
 
-{% highlight java %}
+{% highlight java linenos %}
 () -> { for (int i = 0; i < 1000; i ++) doWork(); }
 {% endhighlight %}
 
 如果一个Lambda表达式的参数类型，可以根据上下文推断出来，你可以省略它们。例如：
-{% highlight java %}
+{% highlight java linenos %}
 Comparator<String> comp
      = (first, second) // Same as (String first, String second)
         -> Integer.compare(first.length(), second.length());
@@ -36,7 +36,7 @@ Comparator<String> comp
 这里，编译器能够推断出first和second肯定是字符串类型，因为，这个Lambda表达式被赋值给了字符串Comparator。
 如果Lambda表达式只有一个单独的、可以推断出的参数，你甚至可以省略两边的小括号：
 
-{% highlight java %}
+{% highlight java linenos %}
 EventHandler<ActionEvent> listener = event ->
      System.out.println("Thanks for clicking!");
      // Instead of (event) -> or (ActionEvent event) ->
@@ -44,14 +44,14 @@ EventHandler<ActionEvent> listener = event ->
 
 就像你可以给方法的参数加上注解或final修饰符一样，Lambda表达式也可以：
 
-{% highlight java %}
+{% highlight java linenos %}
 (final String name) -> ...
 (@NonNull String name) -> ...
 {% endhighlight %}
 
 你永远不能指定Lambda表达式的返回值类型，它只能从上下文去推断出来。例如，表达式
 
-{% highlight java %}
+{% highlight java linenos %}
 (String first, String second) -> Integer.compare(first.length(), second.length());
 {% endhighlight %}
 
@@ -59,7 +59,7 @@ EventHandler<ActionEvent> listener = event ->
 
 注意，只在部分分支中有返回值，而在其他分支中没有返回值的Lambda表达式是非法的。例如，
 
-{% highlight java %}
+{% highlight java linenos %}
 (int x) -> { if (x >= 0) return 1; }
 // invalid Lambda expression
 {% endhighlight %}
@@ -74,7 +74,7 @@ EventHandler<ActionEvent> listener = event ->
 
 为了展示到成函数式接口的转换，看看Arrays.sort方法。它的第二个参数需要一个只包含一个方法的Comparator接口的实例。简单的给它提供一个Lambda表达式：
 
-{% highlight java %}
+{% highlight java linenos %}
 Arrays.sort(words,
      (first, second) -> Integer.compare(first.length(), second.length()));
 {% endhighlight %}
@@ -84,7 +84,7 @@ Arrays.sort(words,
 
 这种到接口的转换，令Lambda表达式如此的引人注目，语法很短，很简单。下面是另外一个例子：
 
-{% highlight java %}
+{% highlight java linenos %}
 button.setOnAction(event ->
      System.out.println("Thanks for clicking!"));
 {% endhighlight %}
@@ -95,7 +95,7 @@ button.setOnAction(event ->
 
 Java API的java.util.function中定义了几个范型的函数式接口。其中一个接口，BiFunction，描述了拥有参数T和U，返回值是R的函数。你可以把我们字符串比较的Lambda表达式保存在这种类型的变量中：
 
-{% highlight java %}
+{% highlight java linenos %}
 BiFunction< String, String, Integer > comp
      = (first, second) -> Integer.compare(first.length(), second.length());
 {% endhighlight %}
@@ -106,7 +106,7 @@ BiFunction< String, String, Integer > comp
 
 最后，检查型异常，会影响Lambda表达式转型成函数式接口实例。如果Lambda表达式语句体中抛出了检查型异常，这个异常需要在目标接口中的抽象方法里声明。例如，下面的代码就有问题：
 
-{% highlight java %}
+{% highlight java linenos %}
 Runnable sleeper = () -> { System.out.println("Zzz"); Thread.sleep(1000); };
 // Error: Thread.sleep can throw a checkedInterruptedException
 {% endhighlight %}
@@ -119,13 +119,13 @@ Runnable sleeper = () -> { System.out.println("Zzz"); Thread.sleep(1000); };
 
 有时候，已经有方法实现了你想要传递给其他代码的逻辑。比如，假定任何时候按钮被点击，你只是想要打印事件对象，你肯定会这样做：
 
-{% highlight java %}
+{% highlight java linenos %}
 button.setOnAction(event -> System.out.println(event));
 {% endhighlight %}
 
 如果能够只把println方法传递给setOnAction方法，那就更好了。下面就是这样做的：
 
-{% highlight java %}
+{% highlight java linenos %}
 button.setOnAction(System.out::println);
 {% endhighlight %}
 
@@ -133,7 +133,7 @@ button.setOnAction(System.out::println);
 
 另外一个例子，假如你想忽略大小写的给字符串排序。你可以这样：
 
-{% highlight java %}
+{% highlight java linenos %}
 Arrays.sort(strings, String::compareToIgnoreCase);
 {% endhighlight %}
 
@@ -149,7 +149,7 @@ Arrays.sort(strings, String::compareToIgnoreCase);
 
 在方法引用中，可以使用this关键字。例如，this::equals等价于x -> this.equals(x)。super也一样。表达式supper::instanceMethod使用this作为目标，调用指定方法的父类版本。下面的代码故意写成那样，来展示工作机制：
 
-{% highlight java %}
+{% highlight java linenos %}
 class Greeter {
      public void greet() {
         System.out.println("Hello, world!");
@@ -172,7 +172,7 @@ class ConcurrentGreeter extends Greeter {
 
 除了把方法名改成new以外，构造方法引用基本和方法引用一样。例如，Button::new是一个Button的构造方法引用。哪一个构造方法被调用，取决于上下文。想象一下，你有一个字符串列表。那么通过用每一个字符串去调用Button的构造方法，你可把字符串列表转换成一个按钮数组。
 
-{% highlight java %}
+{% highlight java linenos %}
 List<String> labels = ...;
 Stream<Button> stream = labels.stream().map(Button::new);
 List<Button> buttons = stream.collect(Collectors.toList());
@@ -184,13 +184,13 @@ stream、map和collect方法的细节不在本文范围之内。现在，重要�
 
 数组的构造方法引用，对克服Java的限制很有用。我们不能创建一个以范型类型T为元素的数组。表达式new T[n]是不对的，因为它在编译时，被擦除为new Object[n]。对类库的作者来说，这是一个问题。例如，我们想拥有一个按钮的数组。Stream接口有一个返回Object数组的方法，toArray：
 
-{% highlight java %}
+{% highlight java linenos %}
 Object[] buttons = stream.toArray();
 {% endhighlight %}
 
 然而，这并不能令人满意。我们想要的是按钮数组，而不是Object数组。stream库用构造方法引用解决了这个问题。把Button[]::new传递给toArray方法：
 
-{% highlight java %}
+{% highlight java linenos %}
 Button[] buttons = stream.toArray(Button[]::new);
 {% endhighlight %}
 

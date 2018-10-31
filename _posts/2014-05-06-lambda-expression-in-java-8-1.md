@@ -30,7 +30,7 @@ Lambda表达式是一个代码块，你可以绕过它，因此它能在稍后�
 
 当你想在一个独立的线程中执行代码时，你把代码放到Runnable的run方法中，就像这样： 
 
-{% highlight java%}
+{% highlight java linenos %}
 class Worker implements Runnable {
      public void run() {
          for (int i = 0; i < 1000; i++)
@@ -42,7 +42,7 @@ class Worker implements Runnable {
 
 然后，当你想执行这段代码时，你创建一个Worker实例，把它提交给线程池，或者简单的开始一个新线程：
 
-{% highlight java%}
+{% highlight java linenos %}
 Worker w = new Worker();
 new Thread(w).start();
 {% endhighlight %}
@@ -51,7 +51,7 @@ new Thread(w).start();
 
 想想用自定义的Comparator排序。如果你想以长度，而不以默认的字典顺序对字符串排序，你可以传递一个Comparator对象给sort方法：
 
-{% highlight java%}
+{% highlight java linenos %}
 class LengthComparator implements Comparator<String> {
      public int compare(String first, String second) {
          return Integer.compare(first.length(), second.length());
@@ -65,7 +65,7 @@ sort方法会持续调用compare方法，重排乱序的元素，直到数组排
 
 作为另外一个延后执行的例子，考虑一个按钮回调。你新建一个继承Listener接口的类，把回调动作放进其中，创建它的一个实例，最后把实例注册到按钮。这种场景司空见惯，以至于很多程序员都使用“匿名类的匿名实例”语法： 
 
-{% highlight java%}
+{% highlight java linenos %}
 button.setOnAction(new EventHandler<ActionEvent>() {
     public void handle(ActionEvent event) {
         System.out.println("Thanks for clicking!");
@@ -89,13 +89,13 @@ button.setOnAction(new EventHandler<ActionEvent>() {
  
 再想想上面排序的例子。我们传递比较字符串长度的代码。我们计算： 
  
-{% highlight java%}
+{% highlight java linenos %}
 Integer.compare(first.length(), second.length());
 {% endhighlight %}
 
 fisrt和second是什么？它们都是字符串！Java是强类型语言，我们也必须指明这一点： 
 
-{% highlight java%}
+{% highlight java linenos %}
 (String first, String second) -> Integer.compare(first.length(), second.length());
 {% endhighlight %}
 
@@ -103,7 +103,7 @@ fisrt和second是什么？它们都是字符串！Java是强类型语言，我�
 
 它的名称Lambda是怎么来的呢？很多年前，还在计算机出现之前，逻辑学家Alonzo Church想要形式化数学函数，让它具有更有效的可计算性。（奇怪的事，人们知道有些函数的存在，却没有人知道怎么计算它们的值。）他用希腊字母lambda（λ）来表示函数参数。如果他懂得Jav API，他可能会这样写： 
 
-{% highlight java%}
+{% highlight java linenos %}
 λfirst.λsecond.Integer.compare(first.length(), second.length());
 {% endhighlight %}
 
