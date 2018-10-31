@@ -323,8 +323,10 @@ hr {
     margin-top: 10px;
     margin-bottom: 10px;
     margin-left: 5px;
-    font-size: 13px;
+    font-size: 11px;
     min-width: 500px;
+    font-family: monospace;
+    letter-spacing: 0px;
 }
 
 #post > table th {
@@ -340,6 +342,7 @@ hr {
     background: #fff;
     padding: 3px 12px 3px 12px;
     border-left: 1px solid #999;
+
 }
 
 img {
