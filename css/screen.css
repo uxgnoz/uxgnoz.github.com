@@ -331,10 +331,12 @@ hr {
 }
 
 #post > table th {
-    border: 1px solid #999;
+    border: 1px solid #000000;
     letter-spacing: 2px;
     padding: 3px 12px 2px 12px;
-    background: rgba(102, 128, 153, 0.0470588);
+    background: #28323C;
+    color: white;
+    font-weight: bold;
 }
 
 #post > table td {
