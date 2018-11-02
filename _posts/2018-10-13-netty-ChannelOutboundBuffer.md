@@ -33,7 +33,7 @@ private int flushed;
 
 ## 0x02 ChannelOutboundBuffer#addMessage
 
-ChannelOutboundBuffer#addMessage 在链表尾部添加一个 Entry。
+ChannelOutboundBuffer#addMessage 在链表*非 flush 区间*尾部添加一个 Entry。
 
 {% highlight java linenos %}
 public void addMessage(Object msg, int size, ChannelPromise promise) {
@@ -438,21 +438,18 @@ private static ByteBuffer[] expandNioBufferArray(ByteBuffer[] array,
     int newCapacity = array.length;
     do {
         newCapacity <<= 1;
-
         if (newCapacity < 0) {
             throw new IllegalStateException();
         }
-
     } while (neededSpace > newCapacity);
 
     ByteBuffer[] newArray = new ByteBuffer[newCapacity];
     System.arraycopy(array, 0, newArray, 0, size);
-
     return newArray;
 }
 {% endhighlight %}
 
-## 0x0a ChannelOutboundBuffer#failFlushed
+## 0x0A ChannelOutboundBuffer#failFlushed
 
 删除区间 [flushedEntry, unflushedEntry) 上的 Entry ，并设置 Entry 的 promise 为失败。
 
@@ -477,7 +474,7 @@ void failFlushed(Throwable cause, boolean notify) {
 }
 {% endhighlight %}
 
-## 0x0b ChannelOutboundBuffer#bytesBeforeWritable
+## 0x0B ChannelOutboundBuffer#bytesBeforeWritable
 
 ChannelOutboundBuffer#isWritable 返回 false 时，totalPendingSize 高于 channel 配置的缓冲区低水位线字节数，否则返回 0。
 
@@ -493,7 +490,7 @@ public long bytesBeforeWritable() {
 }
 {% endhighlight %}
 
-## ChannelOutboundBuffer#bytesBeforeUnwritable
+## 0x0C ChannelOutboundBuffer#bytesBeforeUnwritable
 
 ChannelOutboundBuffer#isWritable 返回 true 时，totalPendingSize 低于 channel 配置的缓冲区高水位线字节数，否则返回 0。
 
