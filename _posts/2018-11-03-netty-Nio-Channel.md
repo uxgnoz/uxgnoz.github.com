@@ -13,6 +13,11 @@ AbstractNioChannel 是所有基于 Selector 多路复用通道的抽象基类。
 
 构造方法中设置通道关联的低层 SelectableChannel 实例 ch 及其在 Selector 中关注的事件类型 readInterestOp。如果本通道是由服务端接受客户端连接而创建的，还需要设置通道的 parent 为服务端通道。
 
+字段 `readInterestOp`，作为通道自带的关注事件：
+
+* 服务端通道为 `OP_ACCEPT`，
+* 客户端通道为 `OP_READ`。
+
 {% highlight java linenos %}
 // 底层 java 通道
 private final SelectableChannel ch;
@@ -293,7 +298,7 @@ private void fulfillConnectPromise(ChannelPromise promise, boolean wasActive) {
 
 一旦连接服务端过程完成，需要调用 #finishConenct 方法，结束连接，可能连接成功，也能连接失败。
 
-> 该方法只能在工作线程中调用。
+> #finishConenct 方法只能在工作线程中调用。
 
 {% highlight java linenos %}
 public final void finishConnect() {
@@ -375,16 +380,149 @@ AbstractChannel
 {% highlight java linenos %}
 {% endhighlight %}
 
+AbstractNioMessageChannel$NioMessageUnsafe 继承自 AbstractNioUnsafe，实现了其中的 #read 方法。看注释吧，没啥好说的。
+
 {% highlight java linenos %}
+private final List<Object> readBuf = new ArrayList<Object>();
+
+public void read() {
+    // 仅限工作线程调用
+    assert eventLoop().inEventLoop();
+
+    final ChannelConfig config = config();
+    final ChannelPipeline pipeline = pipeline();
+    final RecvByteBufAllocator.Handle allocHandle = unsafe().recvBufAllocHandle();
+    allocHandle.reset(config);
+
+    boolean closed = false;
+    Throwable exception = null;
+    try {
+        try {
+            do {
+                // 每次读一个客户端通道
+                int localRead = doReadMessages(readBuf);
+                if (localRead == 0) {
+                    break;
+                }
+                // 在 Nio 这里，要么 0，要么 1
+                if (localRead < 0) {
+                    closed = true;
+                    break;
+                }
+                // 增加读入消息数（客户端通道数）
+                allocHandle.incMessagesRead(localRead);
+            } // 是否要继续，一次调用处理多个客户端连接？
+            while (allocHandle.continueReading());
+        } catch (Throwable t) {
+            exception = t;
+        }
+
+        int size = readBuf.size();
+        for (int i = 0; i < size; i ++) {
+            // 设置没有读等待
+            readPending = false;
+            // 往服务端管道中发送 ChannelRead 事件，参数是 客户端通道
+            pipeline.fireChannelRead(readBuf.get(i));
+        }
+
+        readBuf.clear();
+        allocHandle.readComplete();
+        // 本次调用中的客户端通道处理完成，管道中发送 ChannelReadComplete 事件
+        pipeline.fireChannelReadComplete();
+
+        if (exception != null) {
+            // 上面的过程有异常，看看是否需要关闭服务端通道
+            closed = closeOnReadError(exception);
+            // 管道中发送 ExceptionCaught 事件
+            pipeline.fireExceptionCaught(exception);
+        }
+
+        if (closed) { // 需要关闭服务端通道
+            inputShutdown = true;
+            if (isOpen()) {
+                // 关之
+                close(voidPromise());
+            }
+        }
+    } finally {
+        // Check if there is a readPending which was not processed yet.
+        // This could be for two reasons:
+        // * The user called Channel.read() or ChannelHandlerContext.read() in channelRead(...) method
+        // * The user called Channel.read() or ChannelHandlerContext.read() in channelReadComplete(...) method
+        //
+        // See https://github.com/netty/netty/issues/2254
+        if (!readPending && !config.isAutoRead()) {
+            // 取消客户端连接关注 OP_ACCEPT
+            removeReadOp();
+        }
+    }
+}
+}
 {% endhighlight %}
 
 ### 0x0302 NioServerSocketChannel
 
+下面是 NioServerSocketChannel 的具体构造方法。注意 `readInterestOp` 为 `SelectionKey.OP_ACCEPT`。
+
+{% highlight java linenos %}
+public NioServerSocketChannel(ServerSocketChannel channel) {
+    // 读事件为 OP_ACCEPT
+    super(null, channel, SelectionKey.OP_ACCEPT);
+    config = new NioServerSocketChannelConfig(this, javaChannel().socket());
+}
+{% endhighlight %}
+
 {% highlight java linenos %}
 {% endhighlight %}
 
+方法 #doReadMessages 实现了父类的 AbstractNioMessageChannel#doReadMessages。每次接受一个客户端，并为之创建 NioSocketChannel 实例。
+
+方法返回值：
+
+* 1，成功接受客户端连接，并为之创建 NioSocketChannel 实例；
+* 0，因权限导致接受客户端连接失败，或创建 NioSocketChannel 实例失败。
 
 {% highlight java linenos %}
+protected int doReadMessages(List<Object> buf) throws Exception {
+    SocketChannel ch = SocketUtils.accept(javaChannel());
+
+    try {
+        if (ch != null) {
+            buf.add(new NioSocketChannel(this, ch));
+            return 1;
+        }
+    } catch (Throwable t) {
+        logger.warn("Failed to create a new channel from an accepted socket.", t);
+
+        try {
+            ch.close();
+        } catch (Throwable t2) {
+            logger.warn("Failed to close a socket.", t2);
+        }
+    }
+
+    return 0;
+}
+{% endhighlight %}
+
+方法 #doWrite 在 Nio 中没有用到，就不提了。下面几个随意看看。
+
+{% highlight java linenos %}
+protected void doBind(SocketAddress localAddress) throws Exception {
+    if (PlatformDependent.javaVersion() >= 7) {
+        javaChannel().bind(localAddress, config.getBacklog());
+    } else {
+        javaChannel().socket().bind(localAddress, config.getBacklog());
+    }
+}
+
+protected void doClose() throws Exception {
+    javaChannel().close();
+}
+
+public boolean isActive() {
+    return javaChannel().socket().isBound();
+}
 {% endhighlight %}
 
 
@@ -402,6 +540,14 @@ AbstractChannel
 {% endhighlight %}
 
 ### 0x0401 AbstractNioByteChannel
+
+从下面的构造方法，我们可以看出客户端通道 的 `readInterestOp` 都是 `SelectionKey.OP_READ`。
+
+{% highlight java linenos %}
+protected AbstractNioByteChannel(Channel parent, SelectableChannel ch) {
+    super(parent, ch, SelectionKey.OP_READ);
+}
+{% endhighlight %}
 
 下面的代码实现了 AbstractChannel#doWrite 方法。在执行 AbstractUnsafe#flush 时，会调用 #doWrite 的子类具体实现，执行数据写入操作。
 
