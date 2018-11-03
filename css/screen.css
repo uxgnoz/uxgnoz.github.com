@@ -175,6 +175,7 @@ ol, ul {
   /*border-top: 4px solid #eee;*/
   /*margin-top: 2em;*/
   overflow: hidden;
+  font-family: 'Adobe Hebrew', '宋体',  sans-serif;
 }
 
 .site .footer .contact {
