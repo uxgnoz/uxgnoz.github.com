@@ -43,12 +43,12 @@ h2 {
 
 h3 {
   font-size: 20px;
-  font-style: italic;
+  /* font-style: italic; */
   margin: 25px 0 15px 5px;
 }
 
 h4 {
-  font-style: italic;
+  /* font-style: italic; */
   font-size: 18px;
   margin: 25px 0 15px 5px;
 }
