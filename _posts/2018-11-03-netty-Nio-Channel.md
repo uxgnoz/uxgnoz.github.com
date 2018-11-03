@@ -33,11 +33,7 @@ protected AbstractNioChannel(Channel parent, SelectableChannel ch, int readInter
     } catch (IOException e) {
         try {
             ch.close();
-        } catch (IOException e2) {
-            if (logger.isWarnEnabled()) {
-                logger.warn("Failed to close a partially initialized socket.", e2);
-            }
-        }
+        } catch (IOException e2) { }
 
         throw new ChannelException("Failed to enter non-blocking mode.", e);
     }
@@ -173,21 +169,12 @@ AbstractNioUnsafe 继承了 AbstractChannel#AbstractUnsafe，同时实现了 Abs
 
 {% highlight java linenos %}
 public interface NioUnsafe extends Unsafe {
-    /**
-     * Return underlying {@link SelectableChannel}
-     */
+    //Return underlying {@link SelectableChannel}
     SelectableChannel ch();
-
-    /**
-     * Finish connect
-     */
+    // 客户端在连接完成后，调用
     void finishConnect();
-
-    /**
-     * Read from underlying {@link SelectableChannel}
-     */
+    //Read from underlying {@link SelectableChannel}
     void read();
-
     // 强制数据刷出
     void forceFlush();
 }
@@ -420,9 +407,13 @@ AbstractChannel
 
 > 在 AbstractChannel$AbstractUnsafe 中，#flush 会调用 #flush0，进而调用 #doWrite。
 
-每一次 #doWriteInternal 成功的数据写出 writeSpinCount 递减 1，直到 writeSpinCount 为 0。
+方法 #doWriteInternal 的返回值：
 
-在 #doWriteInternal 中，localFlushedAmount 为实际写出的字节数，如果 localFlushedAmount 小于等于 0，说明操作系统网络底层的写缓冲区满了。
+* `0`，msg 中没有可写数据；
+* `1`，成功写出 msg 中的部分或全部数据；
+* `Integer.MAX_VALUE`，底层缓冲区满，未写出数据。
+  
+每一次 #doWriteInternal 成功的数据写出 writeSpinCount 递减 1，直到 writeSpinCount 为 0。localFlushedAmount 为实际写出的字节数，如果 localFlushedAmount 小于等于 0，说明操作系统网络底层的写缓冲区满了。
 
 > writeSpinCount 限制了单个 socket 的资源使用，比如 cpu 时间。
 
@@ -494,8 +485,8 @@ private int doWriteInternal(ChannelOutboundBuffer in, Object msg) throws Excepti
 
 定额 writeSpinCount 用完，当出站缓冲区依然有数据未写出。有 2 种情况：
 
-1. writeSpinCount = 0，设置 OP_WRITE（？干啥、不懂哎！）；
-2. writeSpinCount < 0，说明底层网络缓冲区满了，清除 OP_WRITE， 我们让打包*数据写出任务*到工作线程，以后继续。
+1. `setOpWrite` 为 `TRUE`，$$writeSpinCount < 0$$，这种情况一般是由底层网络缓冲区满导致，因此需要设置*写关注*，待可写时，继续写；
+2. `setOpWrite` 为 `FALSE`，$$writeSpinCount == 0$$，说明本次定额*正常用完*，取消*写关注*，打包*数据写出任务*到工作线程，先让其他任务有机会执行，以后我们继续。
 
 {% highlight java linenos %}
 protected final void incompleteWrite(boolean setOpWrite) {
@@ -523,7 +514,7 @@ private final Runnable flushTask = new Runnable() {
     }
 };
 
-// 设置关注事件类型 OP_WRITE
+// 设置 写关注
 protected final void setOpWrite() {
     final SelectionKey key = selectionKey();
     if (!key.isValid()) {
@@ -536,7 +527,7 @@ protected final void setOpWrite() {
     }
 }
 
-// 取消关注事件类型 OP_WRITE
+// 取消 写关注
 protected final void clearOpWrite() {
     final SelectionKey key = selectionKey();
     if (!key.isValid()) {
@@ -559,10 +550,10 @@ protected final void clearOpWrite() {
 1. 校验输入流是否已关闭，如果已关闭，则取消`读操作`等待标志并立即返回；
 2. 分配 byteBuf；
 3. 调用子类具体实现 #doReadBytes 读入数据到 byteBuf，并更新读取字节数到 allocHandle#lastBytesRead；
-4. 如果没有读到数据，则释放 byteBuf；如果读到 EOF，设置 readPending 为 false；跳出循环；
-5. 调用 allocHandle#incMessagesRead，读取记录数增加 1；设置 readPending 为 false；往通道中发送 ChannelRead 事件；
+4. 如果没有读到数据，则释放 byteBuf；如果读到 `EOF`，设置 readPending 为 false；跳出循环；
+5. 调用 allocHandle#incMessagesRead，读取记录数增加 1；设置 readPending 为 false；往通道中发送 `ChannelRead 事件`；
 6. 调用 allocHandle#continueReading 判断是否需要继续读取数据，如果返回 true 则回到第 2 步；
-7. 循环读取结束，往通道中发送 ChannelReadComplete 事件；
+7. 循环读取结束，往通道中发送 `ChannelReadComplete 事件`；
 8. 如果由于读到数据流 EOF 而导致读取循环结束，调用 #closeOnRead， 视 channel 配置选择关闭输入流或关闭整个通道；
 9. 最后，如果 readPending 为 false 且没有配置自动读，调用 #removeReadOp 移除本通道的关注事件。
 
@@ -651,10 +642,10 @@ private void closeOnRead(ChannelPipeline pipeline) {
 
 方法 #handleReadException 处理读取异常。
 
-1. 如果出异常前 byteBuf 中已读取了部分数据，设置 readPending 为 false，往通道中发送 ChannelRead 事件，否则释放 byteBuf；
-2. 往通道中发送 ChannelReadComplete 事件；
-3. 往通道中发送 ExceptionCaught 事件；
-4. 如果输入流返回了 EOF 或者出现了 IO 异常，调用 #closeOnRead，视 channel 配置选择关闭输入流或关闭整个通道；
+1. 如果出异常前 byteBuf 中已读取了部分数据，设置 readPending 为 false，往通道中发送 `ChannelRead 事件`，否则释放 byteBuf；
+2. 往通道中发送 `ChannelReadComplete 事件`；
+3. 往通道中发送 `ExceptionCaught 事件`；
+4. 如果输入流返回了 `EOF` 或者出现了 IO 异常，调用 #closeOnRead，视 channel 配置选择关闭输入流或关闭整个通道；
 
 {% highlight java linenos %}
 private void handleReadException(ChannelPipeline pipeline, ByteBuf byteBuf, 
@@ -676,7 +667,7 @@ private void handleReadException(ChannelPipeline pipeline, ByteBuf byteBuf,
 }
 {% endhighlight %}
 
-方法 #closeOnRead，视 channel 配置选择关闭输入流或关闭整个通道。
+方法 #closeOnRead，视 channel 配置选择仅关闭*输入流*或关闭整个通道。
 
 {% highlight java linenos %}
 private void closeOnRead(ChannelPipeline pipeline) {
@@ -702,7 +693,7 @@ private void closeOnRead(ChannelPipeline pipeline) {
 
 ### 0x0403 NioSocketChannel
 
-作为 AbstractNioChannel#doConnect 的具体实现，调用了低层 SocketChannel#connect 方法，向服务端发起连接。 由于 Netty 中的多路复用通道总是被设置成非阻塞模式，因此 #connect 方法总是反回 false（？），这时需要在 selectionKey 中加入事件类型 *SelectionKey.OP_CONNECT*。在执行下一轮 #select 后，一旦出现该类事件，说明*连接已完成*，可以调用 SocketChannel#finishConnect 方法结束连接过程。
+方法 #doConnect 作为 AbstractNioChannel#doConnect 的具体实现，调用了低层 SocketChannel#connect 方法，向服务端发起连接。 由于 Netty 中的*多路复用通道*总是被设置成*非阻塞*模式，因此 #connect 方法总是立即反回 false（？），这时需要在 selectionKey 中加入关注事件类型 *SelectionKey.OP_CONNECT*。在执行下一轮 #select 时，一旦出现该类事件，说明*连接已完成*，可以调用 SocketChannel#finishConnect 方法结束连接过程。
 
 {% highlight java linenos %}
 protected boolean doConnect(SocketAddress remoteAddress, SocketAddress localAddress) 
@@ -745,63 +736,114 @@ protected void doWrite(ChannelOutboundBuffer in) throws Exception {
     int writeSpinCount = config().getWriteSpinCount();
     do {
         if (in.isEmpty()) {
-            // All written so clear OP_WRITE
+            // 没有出站数据，取消写关注
             clearOpWrite();
-            // Directly return here so incompleteWrite(...) is not called.
+            // 直接返回，incompleteWrite(...) 不会被调用
             return;
         }
 
-        // Ensure the pending writes are made of ByteBufs only.
-        int maxBytesPerGatheringWrite = ((NioSocketChannelConfig) config).getMaxBytesPerGatheringWrite();
+        // 本次最大数据写出量
+        int maxBytesPerGatheringWrite = 
+                ((NioSocketChannelConfig) config).getMaxBytesPerGatheringWrite();
+        // 从出站缓冲区中，
+        // 拿出最多 1024 个 ByteBuffer 且最多 maxBytesPerGatheringWrite 的数据量
         ByteBuffer[] nioBuffers = in.nioBuffers(1024, maxBytesPerGatheringWrite);
+        // 实际拿出 ByteBuffer 的个数
         int nioBufferCnt = in.nioBufferCount();
 
-        // Always us nioBuffers() to workaround data-corruption.
-        // See https://github.com/netty/netty/issues/2761
         switch (nioBufferCnt) {
             case 0:
-                // We have something else beside ByteBuffers to write so fallback to normal writes.
+                // ByteBuffer 个数为 0，说明有除了 ByteBuffer 以外的其他东西，比如 FileRegion
                 writeSpinCount -= doWrite0(in);
                 break;
             case 1: {
-                // Only one ByteBuf so use non-gathering write
-                // Zero length buffers are not added to nioBuffers by ChannelOutboundBuffer, so there is no need
-                // to check if the total size of all the buffers is non-zero.
+                // 只有 1 个 ByteBuffer，采用 普通写
                 ByteBuffer buffer = nioBuffers[0];
                 int attemptedBytes = buffer.remaining();
+                // 向 javaChannel 写出数据，并返回实际写出数据量 localWrittenBytes
                 final int localWrittenBytes = ch.write(buffer);
                 if (localWrittenBytes <= 0) {
+                    // 数据没写出，设置 写关注
                     incompleteWrite(true);
+                    // 结束本次调用
                     return;
                 }
-                adjustMaxBytesPerGatheringWrite(attemptedBytes, localWrittenBytes, maxBytesPerGatheringWrite);
+                // 调整下次最大数据写出量
+                adjustMaxBytesPerGatheringWrite(
+                        attemptedBytes, 
+                        localWrittenBytes, 
+                        maxBytesPerGatheringWrite
+                );
+
+                // 从出站缓冲区移除已写出的数据
                 in.removeBytes(localWrittenBytes);
+                // 递减 写定额
                 --writeSpinCount;
                 break;
             }
             default: {
-                // Zero length buffers are not added to nioBuffers by ChannelOutboundBuffer, so there is no need
-                // to check if the total size of all the buffers is non-zero.
-                // We limit the max amount to int above so cast is safe
+                // 多于 1 个 ByteBuffer 时，采用 汇聚写
                 long attemptedBytes = in.nioBufferSize();
+                // 汇聚写，并返回实际写出字节数 localWrittenBytes
                 final long localWrittenBytes = ch.write(nioBuffers, 0, nioBufferCnt);
                 if (localWrittenBytes <= 0) {
+                    // 数据没写出，设置 写关注
                     incompleteWrite(true);
+                    // 结束本次调用
                     return;
                 }
-                // Casting to int is safe because we limit the total amount of data in the nioBuffers to int above.
-                adjustMaxBytesPerGatheringWrite((int) attemptedBytes, (int) localWrittenBytes,
-                        maxBytesPerGatheringWrite);
+                //调整下次最大数据写出量
+                adjustMaxBytesPerGatheringWrite(
+                        (int) attemptedBytes, 
+                        (int) localWrittenBytes,
+                        maxBytesPerGatheringWrite
+                );
+
+                // 从出站缓冲区移除已写出的数据
                 in.removeBytes(localWrittenBytes);
+                // 递减 写定额
                 --writeSpinCount;
                 break;
             }
         }
-    } while (writeSpinCount > 0);
+    } // 定额未用完，继续写
+    while (writeSpinCount > 0);
 
+    // 在上面的循环中，出站缓冲区中的数据没有被全部写出
+    // 视情形设置写关注，或打包写任务到工作线程，以后执行
     incompleteWrite(writeSpinCount < 0);
 }
+
+// AbstractNioByteChannel#doWrite0
+// 直接写出 flush 区间表头中的数据
+protected final int doWrite0(ChannelOutboundBuffer in) throws Exception {
+    Object msg = in.current();
+    if (msg == null) {
+        return 0;
+    }
+    return doWriteInternal(in, in.current());
+}
+
+private void adjustMaxBytesPerGatheringWrite(int attempted, int written, 
+        int oldMaxBytesPerGatheringWrite) {
+    // By default we track the SO_SNDBUF when ever it is explicitly set. 
+    // However some OSes may dynamically change SO_SNDBUF 
+    // (and other characteristics that determine how much data can be written at once) 
+    // so we should try make a best effort to adjust as OS behavior changes.
+    if (attempted == written) {
+        if (attempted << 1 > oldMaxBytesPerGatheringWrite) {
+            ((NioSocketChannelConfig) config).setMaxBytesPerGatheringWrite(attempted << 1);
+        }
+    } 
+    else if (attempted > MAX_BYTES_PER_GATHERING_WRITE_ATTEMPTED_LOW_THRESHOLD 
+            && written < attempted >>> 1) {
+        ((NioSocketChannelConfig) config).setMaxBytesPerGatheringWrite(attempted >>> 1);
+    }
+}
 {% endhighlight %}
+
+
+下面的方法看看就行了。
 
 {% highlight java linenos %}
 // 从 javaChannel 中读取数据到 byteBuf
@@ -821,6 +863,19 @@ protected int doWriteBytes(ByteBuf buf) throws Exception {
 protected long doWriteFileRegion(FileRegion region) throws Exception {
     final long position = region.transferred();
     return region.transferTo(javaChannel(), position);
+}
+
+// 地址绑定
+protected void doBind(SocketAddress localAddress) throws Exception {
+    doBind0(localAddress);
+}
+
+private void doBind0(SocketAddress localAddress) throws Exception {
+    if (PlatformDependent.javaVersion() >= 7) {
+        SocketUtils.bind(javaChannel(), localAddress);
+    } else {
+        SocketUtils.bind(javaChannel().socket(), localAddress);
+    }
 }
 {% endhighlight %}
 
