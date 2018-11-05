@@ -361,3 +361,17 @@ img {
   color: #5fba3d;
   font-weight: bold;
 }
+
+#toc {
+  padding-left: 5px;
+}
+
+#toc > ul {
+  margin-left: 0px;
+  list-style: none;
+  /* font-style: italic; */
+}
+
+#toc > ul li {
+  list-style: none;
+}
