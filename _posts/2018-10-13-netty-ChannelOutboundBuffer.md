@@ -8,6 +8,8 @@ category: netty
 
 ------
 
+<div id="toc"></div>
+
 ## 0x01 综述
 
 ChannelOutboundBuffer 为 Channel 的数据发送缓冲区，数据封装成以 Entry 节点的形式存放在单向链表中。链表有三个指针：
@@ -31,7 +33,7 @@ private int flushed;
 
 ------
 
-## 0x02 ChannelOutboundBuffer#addMessage
+## 0x02 #addMessage
 
 ChannelOutboundBuffer#addMessage 在链表*非 flush 区间*尾部添加一个 Entry。
 
@@ -95,7 +97,7 @@ private void setUnwritable(boolean invokeLater) {
 
 ------
 
-## 0x03 ChannelOutboundBuffer#addFlush
+## 0x03 #addFlush
 
 ChannelOutboundBuffer#addFlush 把当前链表中处于*非 flush 区间* [`unflushedEntry`, `tailEntry`] 的 Entry 逐个加入到*flush 区间* [flushedEntry, unflushedEntry) 中。
 
@@ -159,7 +161,7 @@ int cancel() {
 
 ------
 
-## 0x04 ChannelOutboundBuffer#current
+## 0x04 #current
 
 ChannelOutboundBuffer#current 返回 flushedEntry 指向的 Entry 中的数据。
 
@@ -176,7 +178,7 @@ public Object current() {
 
 ------
 
-## 0x05 ChannelOutboundBuffer#progress
+## 0x05 #progress
 
 ChannelOutboundBuffer#progress 进度通知。如果 flushedEntry 中的 promise 为 ChannelProgressivePromise 类型，则尝试通知进度，也就是当前 Entry 中的数据真正写入 channel 的进度。
 
@@ -195,7 +197,7 @@ public void progress(long amount) {
 
 ------
 
-## 0x06 ChannelOutboundBuffer#remove
+## 0x06 #remove
 
 ChannelOutboundBuffer#remove  从链表中删除 flushedEntry 指向的 Entry ， flushedEntry 指向下一个 Entry。
 
@@ -246,7 +248,7 @@ private void removeEntry(Entry e) {
 
 ------
 
-## 0x07 ChannelOutboundBuffer#remove(Throwable cause)
+## 0x07 #remove
 
 ChannelOutboundBuffer#remove(Throwable cause) 基本逻辑跟 ChannelOutboundBuffer#remove一致，除了设置 Entry 的 promise 为 fail。
 
@@ -285,7 +287,7 @@ private boolean remove0(Throwable cause, boolean notifyWritability) {
 
 ------
 
-## 0x08 ChannelOutboundBuffer#removeBytes
+## 0x08 #removeBytes
 
 ChannelOutboundBuffer#removeBytes(long writtenBytes) 从 flushedEntry 指向的 Entry 开始，依次删除数据全部发送完的 Entry，更新部分发送完 Entry 的 readerIndex，并对每个 Entry 中的 promise 发出进度通知。
 
@@ -326,7 +328,7 @@ public void removeBytes(long writtenBytes) {
 
 ------
 
-## 0x09 ChannelOutboundBuffer#nioBuffers
+## 0x09 #nioBuffers
 
 ChannelOutboundBuffer#nioBuffers 返回*flush 区间*上 Entry#msg 中的底层数据载体 ByteBufer 的数组。 
 
@@ -449,7 +451,7 @@ private static ByteBuffer[] expandNioBufferArray(ByteBuffer[] array,
 }
 {% endhighlight %}
 
-## 0x0A ChannelOutboundBuffer#failFlushed
+## 0x0A #failFlushed
 
 删除区间 [flushedEntry, unflushedEntry) 上的 Entry ，并设置 Entry 的 promise 为失败。
 
@@ -474,7 +476,7 @@ void failFlushed(Throwable cause, boolean notify) {
 }
 {% endhighlight %}
 
-## 0x0B ChannelOutboundBuffer#bytesBeforeWritable
+## 0x0B #bytesBeforeWritable
 
 ChannelOutboundBuffer#isWritable 返回 false 时，totalPendingSize 高于 channel 配置的缓冲区低水位线字节数，否则返回 0。
 
@@ -490,7 +492,7 @@ public long bytesBeforeWritable() {
 }
 {% endhighlight %}
 
-## 0x0C ChannelOutboundBuffer#bytesBeforeUnwritable
+## 0x0C #bytesBeforeUnwritable
 
 ChannelOutboundBuffer#isWritable 返回 true 时，totalPendingSize 低于 channel 配置的缓冲区高水位线字节数，否则返回 0。
 
