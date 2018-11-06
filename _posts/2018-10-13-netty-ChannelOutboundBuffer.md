@@ -8,8 +8,6 @@ category: netty
 
 ------
 
-<div id="toc"></div>
-
 ## 0x01 综述
 
 ChannelOutboundBuffer 为 Channel 的数据发送缓冲区，数据封装成以 Entry 节点的形式存放在单向链表中。链表有三个指针：

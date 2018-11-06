@@ -7,8 +7,6 @@ layout: posts
 
 ------
 
-<div id="toc"></div>
-
 ## 0x01 AbstractNioChannel
 
 AbstractNioChannel 是所有基于 Selector 多路复用通道的抽象基类。下面是它的部分字段及构造方法。

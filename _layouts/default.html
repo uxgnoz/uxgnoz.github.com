@@ -1,58 +1,69 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
 <head>
-   <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-   <title>{{ page.title }}</title>
-   <meta name="author" content="Rolandz"/>
-   <link rel="stylesheet" href="/css/syntax.css" type="text/css" />
-   <link rel="stylesheet" href="/css/screen.css" type="text/css" />
+    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+    <title>{{ page.title }}</title>
+    <meta name="author" content="Rolandz"/>
+    <link rel="stylesheet" href="/css/bootstrap/bootstrap.css" type="text/css" />
+    <link rel="stylesheet" href="/css/screen.css" />
+    <link rel="stylesheet" href="/css/syntax.css" />
     <script src="/js/jquery-3.1.1.min.js" type="text/javascript"></script>
     <script src="/js/toc.js" type="text/javascript"></script>
 
-   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <!--<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>-->
+    <script type="text/javascript"
+            src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
-   <script>
-    var _hmt = _hmt || [];
-    (function() {
-      var hm = document.createElement("script");
-      hm.src = "https://hm.baidu.com/hm.js?6cbe08dab49512b2f3d2a1694a9696fb";
-      var s = document.getElementsByTagName("script")[0]; 
-      s.parentNode.insertBefore(hm, s);
-    })();
-  
-  
-    $(document).ready(function() {
-        $('#toc').toc({ listType: 'ul' , headers: 'h2, h3, h4, h5, h6' });
-    }); 
+    <script>
+        var _hmt = _hmt || [];
+        (function () {
+            var hm = document.createElement("script");
+            hm.src = "https://hm.baidu.com/hm.js?6cbe08dab49512b2f3d2a1694a9696fb";
+            var s = document.getElementsByTagName("script")[0];
+            s.parentNode.insertBefore(hm, s);
+        })();
 
-  </script>
+
+        $(document).ready(function () {
+            $('#toc').toc({listType: 'ul', headers: 'h1, h2, h3, h4, h5, h6'});
+        });
+
+    </script>
 </head>
-<body>
-<div style="height:60px; width:100%; background-color:#28323C; block">
-  <div class="site" style="margin-top:0px">
-    <div class="title" style="padding-top:16px; font-size:17px;color: rgb(187, 187, 187);">
-      Rolandz
-      <a class="extra" href="/">home</a>
+<body data-spy="scroll" data-target="#toc" data-offset="20">
+    <div class="navbar navbar-inverse " style="background-color:#28323C;">
+        <div class="container">
+            <div class="navbar-header" style="color: rgb(187, 187, 187);">
+                <a class="navbar-brand hidden-sm" style="font-family: 'Microsoft Yahei';font-weight: bold">Rolandz</a>
+            </div>
+            <div class="navbar-collapse collapse">
+                <ul class="nav navbar-nav">
+                    <li class="hidden-sm hidden-md">
+                        <a href="/" style="font-family: 'Microsoft Yahei';font-weight: bold">home</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
     </div>
-  </div>
-</div>
-<div class="site">
-  <!--<div class="title">
-    <a href="/">内部文档</a>
-    <a class="extra" href="/">home</a>
-  </div>
-  -->
+    <div class="container" style="padding-top: 0px">
+        <div class="row">
+            <div class="col-md-9">
+                <div class="site">
+                    {{ content }}
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div id="toc" class="toc affix"></div>
+            </div>
+        </div>
 
-  {{ content }}
-  
-  <div class="footer">
-    <div class="contact">
-      <p>
-            © <a href="/">Rolandz</a> since 2014 | <a href="http://log.zvz.im/" target="_blank">ZVZ's 日志</a>
-      </p>
     </div>
-  </div>
-</div>
+
+    <div class="footer">
+        <div class="container" style="font-size:12px; 'Adobe Hebrew', '宋体', sans-serif;color:#aaa;margin-bottom: 10px;">
+            © <a href="/" style="color:#aaa;">Rolandz</a> since 2014 | <a href="http://log.zvz.im/" style="color:#aaa;" target="_blank">ZVZ's 日志</a>
+        </div>
+    </div>
 
 </body>
 </html>

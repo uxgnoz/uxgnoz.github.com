@@ -2,29 +2,30 @@
 layout: default
 ---
 <div id="post">
-{{ content }}
+    {{ content }}
 </div>
 
 <div class="post-info">
-  <time datetime="{{ page.date | date: " %Y-%m-%d " }}">
-      {{ page.date | date: "%B %d, %Y" }}
-  </time><br/>
-  本文链接 
-  <span style='color:#f99157'> &raquo; </span>  
-  <a id="permalink" href="{{ page.url }}">{{ page.title }}</a>。<br/>
+    <time datetime="{{ page.date | date: " %Y-%m-%d
+    " }}">
+    {{ page.date | date: "%B %d, %Y" }}
+    </time><br/>
+    本文链接
+    <span style='color:#f99157'> &raquo; </span>
+    <a id="permalink" href="{{ page.url }}">{{ page.title }}</a>。<br/>
 
 </div>
-<hr />
+<hr/>
 <div id="related">
-  <h2>相关文章</h2>
-  <ul class="posts">
-    {% for post in site.related_posts limit:5 %}
-      <li style="list-style:none;">
-        <span>{{ post.date | date: "%F" }}</span> 
-        <span style='color:#f99157'> &raquo; </span> 
-        <a href="{{ post.url }}">{{ post.title }}</a></li>
-    {% endfor %}
-  </ul>
+    <h2>相关文章</h2>
+    <ul class="posts">
+        {% for post in site.related_posts limit:5 %}
+        <li style="list-style:none;">
+            <span>{{ post.date | date: "%F" }}</span>
+            <span style='color:#f99157'> &raquo; </span>
+            <a href="{{ post.url }}">{{ post.title }}</a></li>
+        {% endfor %}
+    </ul>
 </div>
 
 
