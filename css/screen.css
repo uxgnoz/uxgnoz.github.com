@@ -297,7 +297,7 @@ strike, linethru {
     color: #5fba3d;
 
     padding: 2px 4px;
-    font-size: 90%;
+    font-size: 100%;
     /*color: #c7254e;*/
     background-color: rgba(102, 128, 153, 0.0370588);
     border-radius: 4px;
@@ -360,7 +360,7 @@ img {
 
 #toc {
     /*padding-left: 5px;*/
-    font-size: 12px;
+    font-size: 13px;
     margin-top:70px;
     border-left: 1px dashed #ddd;
     padding-left: 10px;
