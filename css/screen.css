@@ -422,3 +422,7 @@ img {
 .top-level-header {
     display: inline;
 }
+
+.navbar {
+    border-radius: 0px;
+}
