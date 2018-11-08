@@ -7,9 +7,15 @@ layout: posts
 
 ------
 
+> **todo**
+>
+> * *工作线程*状态变迁
+> * wakenUp 切换
+
+
 ## 综述
 
-从下面的 NioEventLoop 的继承树，很容易看出 Nio 的工作线程是单线程的。
+从下面的`NioEventLoop`的继承树，很容易看出 Nio 的*工作线程*是单线程的。
 
 {% highlight java linenos %}
 SingleThreadEventExecutor
@@ -27,13 +33,9 @@ private SelectedSelectionKeySet selectedKeys;
 private final SelectorProvider provider;
 {% endhighlight %}
 
-*工作线程*的 5 个状态。
+### 工作状态
 
-* 未开始；
-* 工作中；
-* 关闭准备中；
-* 已关闭；
-* 已终止。
+*工作线程*的 5 个状态：`未开始`、`工作中`、`关闭准备中`、`已关闭`、`已终止`。状态处于`工作中`、`关闭准备中`中时都是可以提交任务的。处于`已关闭`后，就不能再提交任务了。
 
 {% highlight java linenos %}
 // 未开始
@@ -48,10 +50,12 @@ private static final int ST_SHUTDOWN = 4;
 private static final int ST_TERMINATED = 5;
 {% endhighlight %}
 
+### 任务类型
+
 *工作线程*会处理 2 种类型的任务，*io 任务*和*非 io 任务*。
 
-* *io 任务*是指；
-* *非 io 任务*是指。
+* *io 任务*是指响应 channel 的 io 事件，比如 `OP_CONENCT`，`OP_READ`，`OP_ACCEPT`，`OP_WRITE`；
+* *非 io 任务*是指执行`taskQueue`、`scheduledQueue`中的任务，可能是数据读取、数据写出及其他各种用户自定义的任务。
 
 ------
 
@@ -91,7 +95,27 @@ public void execute(Runnable task) {
     }
 }
 
-// 往 taskQueue 中加入任务
+// 删除传入的任务
+protected boolean removeTask(Runnable task) {
+    if (task == null) {
+        throw new NullPointerException("task");
+    }
+    return taskQueue.remove(task);
+}
+
+// SingleThreadEventLoop#wakesUpForTask 覆盖了 SingleThreadEventExecutor 中的
+protected boolean wakesUpForTask(Runnable task) {
+    return !(task instanceof NonWakeupRunnable);
+}
+{% endhighlight %}
+
+------
+
+## #addTask
+
+往`taskQueue`中加入任务。
+
+{% highlight java linenos %}
 protected void addTask(Runnable task) {
     if (task == null) {
         throw new NullPointerException("task");
@@ -114,19 +138,6 @@ final boolean offerTask(Runnable task) {
 public boolean isShutdown() {
     return state >= ST_SHUTDOWN;
 }
-
-// 删除传入的任务
-protected boolean removeTask(Runnable task) {
-    if (task == null) {
-        throw new NullPointerException("task");
-    }
-    return taskQueue.remove(task);
-}
-
-// SingleThreadEventLoop#wakesUpForTask 覆盖了 SingleThreadEventExecutor 中的
-protected boolean wakesUpForTask(Runnable task) {
-    return !(task instanceof NonWakeupRunnable);
-}
 {% endhighlight %}
 
 ------
@@ -138,15 +149,15 @@ protected boolean wakesUpForTask(Runnable task) {
 本方法起作用，也就是调用 selector#wakeup 唤醒*工作线程*的条件：
 
 1. 在*用户线程*调用；
-2. `wakeUp` 为 FALSE。
+2. `wakenUp` 为 FALSE。
 
-> 成功唤醒*工作线程*的副作用是`wakeUp`的值由 FALSE 变成了 TRUE。
+> 成功唤醒*工作线程*的副作用是`wakenUp`的值由 FALSE 变成了 TRUE。
    
 
 {% highlight java linenos %}
 protected void wakeup(boolean inEventLoop) {
     // 如果当前执行在用户线程，
-    // 修改 wakeUp 由 false 改为 true 成功，则当前或下一轮 select 立即返回
+    // 修改 wakenUp 由 false 改为 true 成功，则当前或下一轮 select 立即返回
     if (!inEventLoop && wakenUp.compareAndSet(false, true)) {
         selector.wakeup();
     }
@@ -281,7 +292,7 @@ protected void run() {
                     // fall-through to SELECT since the busy-wait is not supported with NIO
                 case SelectStrategy.SELECT:
                     // 没有任务等待执行
-                    // 设置 wakeUp 为 false，原先的值传入 #select
+                    // 设置 wakenUp 为 false，原先的值传入 #select
                     select(wakenUp.getAndSet(false));
 
                     if (wakenUp.get()) {
@@ -348,7 +359,7 @@ protected boolean hasTasks() {
 
 > 猜想： 
 > 
->  `wakeUp` 为 TRUE 时，*工作线程*应该**将要**或**正在**处理`taskQueue`、`scheduledQueue`、`tailTasks`队列中任务。
+>  `wakenUp` 为 TRUE 时，*工作线程*应该**将要**或**正在**处理`taskQueue`、`scheduledQueue`、`tailTasks`队列中任务。
 
 {% highlight java linenos %}
 private void select(boolean oldWakenUp) throws IOException {
@@ -376,11 +387,10 @@ private void select(boolean oldWakenUp) throws IOException {
                 // 超时退出循环
                 break;
             }
-
-            // 有任务需要执行，且 wakeUp 为 false
+            // 有任务需要执行，且 wakenUp 为 false
             if (hasTasks() && wakenUp.compareAndSet(false, true)) {
                 // 首次循环才会到这里？
-                // 设置 wakeUp 为 TRUE，结束 #select
+                // 设置 wakenUp 为 TRUE，结束 #select
                 selector.selectNow();
                 // 为什么是 1？只有首次进入才会？
                 selectCnt = 1;
@@ -396,17 +406,17 @@ private void select(boolean oldWakenUp) throws IOException {
                     || wakenUp.get() 
                     || hasTasks() 
                     || hasScheduledTasks()) {
-                // 有 io 事件发生、队列中有任务、原先或当前的 wakeUp 为 TRUE
+                // 有 io 事件发生、队列中有任务、原先或当前的 wakenUp 为 TRUE
                 // 退出本次调用
                 break;
             }
 
             // 到这里，selector
             // 要么超时返回，下轮退出；
-            // 要么被人唤醒或 jdk bug 而返回，累计 selectCnt 到一定次数，重建 selector；
-            // 要么被中断而返回，退出
+            // 要么被人唤醒或 jdk bug 而提前返回，累计 selectCnt 到一定次数，重建 selector；
+            // 要么被中断而提前返回，退出
 
-            // selector 被中断而返回
+            // selector 被中断而提前返回
             if (Thread.interrupted()) {
                 // selector#select 被用户调用 Thread#interrupt而提前退出
                 // 重置 selectCnt 并退出本次调用
@@ -425,7 +435,6 @@ private void select(boolean oldWakenUp) throws IOException {
                 // selector#select 方法提前返回次数超标，重建 selector
                 rebuildSelector();
                 selector = this.selector;
-
                 // Select again to populate selectedKeys.
                 selector.selectNow();
                 // 重新计数
@@ -433,7 +442,6 @@ private void select(boolean oldWakenUp) throws IOException {
                 // 退出循环
                 break;
             }
-
             // 继续下一轮
             currentTimeNanos = time;
         }
@@ -742,6 +750,8 @@ public boolean isShuttingDown() {
 * true，至少有执行了一个任务；
 * false，没有任务需要执行。
 
+> 本方法只能在*工作线程*调用。
+
 {% highlight java linenos %}
 protected boolean runAllTasks() {
     assert inEventLoop();
@@ -785,7 +795,9 @@ private boolean fetchFromScheduledTaskQueue() {
 
 ## #pollScheduledTask
 
-取`scheduledTaskQueue`队首且可以安排执行的任务，没有返回`null`。
+取`scheduledTaskQueue`队首且在`nanoTime`时刻可以安排执行的任务并从队首移除，没有返回`null`。
+
+> 本方法只能在*工作线程*调用。
 
 {% highlight java linenos %}
 protected final Runnable pollScheduledTask(long nanoTime) {
@@ -799,6 +811,7 @@ protected final Runnable pollScheduledTask(long nanoTime) {
     }
     // 是否可以安排执行
     if (scheduledTask.deadlineNanos() <= nanoTime) {
+        // 从队列移除并返回
         scheduledTaskQueue.remove();
         return scheduledTask;
     }
@@ -811,7 +824,7 @@ protected final Runnable pollScheduledTask(long nanoTime) {
 
 ## #runAllTasksFrom
 
-依次执行传入参数 taskQueue 中所有任务。
+依次执行传入参数`taskQueue`中所有任务。
 
 {% highlight java linenos %}
 protected final boolean runAllTasksFrom(Queue<Runnable> taskQueue) {
