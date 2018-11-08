@@ -27,7 +27,7 @@ private SelectedSelectionKeySet selectedKeys;
 private final SelectorProvider provider;
 {% endhighlight %}
 
-工作线程的 5 个状态。
+*工作线程*的 5 个状态。
 
 * 未开始；
 * 工作中；
@@ -48,6 +48,11 @@ private static final int ST_SHUTDOWN = 4;
 private static final int ST_TERMINATED = 5;
 {% endhighlight %}
 
+*工作线程*会处理 2 种类型的任务，*io 任务*和*非 io 任务*。
+
+* *io 任务*是指；
+* *非 io 任务*是指。
+
 ------
 
 ## #execute
@@ -56,9 +61,7 @@ private static final int ST_TERMINATED = 5;
 
 该方法在*工作线程*调用时，仅仅是向`taskQueue`中加入新的任务。
 
-在*用户线程*调用时，如果*工作线程*还没开始，那么还需要负责启动*工作线程*。如果*工作线程*状态为`已关闭`，且还能够从`taskQueue`中移除前面刚提交的任务，那么抛出异常、拒绝任务。如果*工作线程*为`工作中`，且任务类型不是`NonWakeupRunnable`，那么还需要尝试唤醒它。
-
-> 『尝试唤醒』是因为*工作线程*也许正在运行，不需要被唤醒；也许正被 select 挂起，需要被唤醒。
+在*用户线程*调用时，如果*工作线程*还没开始，那么还需要负责启动*工作线程*。如果*工作线程*状态为`已关闭`，且还能够从`taskQueue`中移除前面刚提交的任务，那么抛出异常、拒绝任务。如果*工作线程*为`工作中`，且任务类型不是`NonWakeupRunnable`，那么还需要去唤醒被`selector`挂起的它。
 
 {% highlight java linenos %}
 // in SingleThreadEventExecutor
@@ -130,7 +133,15 @@ protected boolean wakesUpForTask(Runnable task) {
 
 ## #wakeup
 
-NioEventLoop#wakeup 覆盖了 SingleThreadEventExecutor#wakeup，唤醒被`select`挂起的*工作线程*。只有在*用户线程*调用才*可能*起作用。
+`NioEventLoop#wakeup` 覆盖了 `SingleThreadEventExecutor#wakeup`，唤醒被`selector`挂起的*工作线程*。
+
+本方法起作用，也就是调用 selector#wakeup 唤醒*工作线程*的条件：
+
+1. 在*用户线程*调用；
+2. `wakeUp` 为 FALSE。
+
+> 成功唤醒*工作线程*的副作用是`wakeUp`的值由 FALSE 变成了 TRUE。
+   
 
 {% highlight java linenos %}
 protected void wakeup(boolean inEventLoop) {
@@ -146,7 +157,7 @@ protected void wakeup(boolean inEventLoop) {
 
 ## #startThread
 
-方法 #doStartThread 启动真正的工作线程，并调用 NioEventLoop#run 执行 Nio 处理流程。
+方法 #doStartThread 启动*工作线程*对应的 java 底层 `Thread`，并调用`NioEventLoop#run`执行 Nio 处理流程。
 
 {% highlight java linenos %}
 private void startThread() {
@@ -171,7 +182,7 @@ private void doStartThread() {
             // 缓存工作线程
             thread = Thread.currentThread();
             if (interrupted) {
-                // 不懂哎，待搞
+                // 设置线程的中断标志
                 thread.interrupt();
             }
 
@@ -195,7 +206,6 @@ private void doStartThread() {
                         break;
                     }
                 }
-
                 // Check if confirmShutdown() was called at the end of the loop.
                 if (success && gracefulShutdownStartTime == 0) {
                     // 看看 confirmShutdown 在上面的 run 中有没有被调用，
@@ -204,7 +214,7 @@ private void doStartThread() {
 
                 try {
                     for (;;) {
-                        // 反复调用 #confirmShutdown，跑完剩余的任务为止
+                        // 反复调用 #confirmShutdown，直至返回 TRUE
                         if (confirmShutdown()) {
                             break;
                         }
@@ -271,6 +281,7 @@ protected void run() {
                     // fall-through to SELECT since the busy-wait is not supported with NIO
                 case SelectStrategy.SELECT:
                     // 没有任务等待执行
+                    // 设置 wakeUp 为 false，原先的值传入 #select
                     select(wakenUp.getAndSet(false));
 
                     if (wakenUp.get()) {
@@ -318,6 +329,14 @@ protected void run() {
     }
 }
 
+
+{% endhighlight %}
+
+## #hasTasks
+
+`taskQueue`和`tailTasks`中是否有任务。
+
+{% highlight java linenos %}
 protected boolean hasTasks() {
     return super.hasTasks() || !tailTasks.isEmpty();
 }
@@ -327,94 +346,102 @@ protected boolean hasTasks() {
 
 ## #select
 
+> 猜想： 
+> 
+>  `wakeUp` 为 TRUE 时，*工作线程*应该**将要**或**正在**处理`taskQueue`、`scheduledQueue`、`tailTasks`队列中任务。
+
 {% highlight java linenos %}
 private void select(boolean oldWakenUp) throws IOException {
     Selector selector = this.selector;
     try {
+        // 本次方法调用，selector#select 执行次数
         int selectCnt = 0;
+        // 当前时间
         long currentTimeNanos = System.nanoTime();
+        // 本次 select 的截止时间
+        // #delayNanos 计算 scheduledTaskQueue 队首任务可安排执行的剩余时间
+        // 如果没有 scheduledTaskQueue 任务，默认给 1 秒
         long selectDeadLineNanos = currentTimeNanos + delayNanos(currentTimeNanos);
 
         for (;;) {
-            long timeoutMillis = (selectDeadLineNanos - currentTimeNanos + 500000L) / 1000000L;
+            // 超时时间
+            long timeoutMillis = 
+                    (selectDeadLineNanos - currentTimeNanos + 500000L) / 1000000L;
             if (timeoutMillis <= 0) {
                 if (selectCnt == 0) {
+                    // 一来就超时
                     selector.selectNow();
                     selectCnt = 1;
                 }
+                // 超时退出循环
                 break;
             }
 
-            // If a task was submitted when wakenUp value was true, the task didn't get a chance to call
-            // Selector#wakeup. So we need to check task queue again before executing select operation.
-            // If we don't, the task might be pended until select operation was timed out.
-            // It might be pended until idle timeout if IdleStateHandler existed in pipeline.
+            // 有任务需要执行，且 wakeUp 为 false
             if (hasTasks() && wakenUp.compareAndSet(false, true)) {
+                // 首次循环才会到这里？
+                // 设置 wakeUp 为 TRUE，结束 #select
                 selector.selectNow();
+                // 为什么是 1？只有首次进入才会？
                 selectCnt = 1;
+                // 退出循环
                 break;
             }
 
             int selectedKeys = selector.select(timeoutMillis);
             selectCnt ++;
 
-            if (selectedKeys != 0 || oldWakenUp || wakenUp.get() || hasTasks() || hasScheduledTasks()) {
-                // - Selected something,
-                // - waken up by user, or
-                // - the task queue has a pending task.
-                // - a scheduled task is ready for processing
+            if (selectedKeys != 0 
+                    || oldWakenUp 
+                    || wakenUp.get() 
+                    || hasTasks() 
+                    || hasScheduledTasks()) {
+                // 有 io 事件发生、队列中有任务、原先或当前的 wakeUp 为 TRUE
+                // 退出本次调用
                 break;
             }
+
+            // 到这里，selector
+            // 要么超时返回，下轮退出；
+            // 要么被人唤醒或 jdk bug 而返回，累计 selectCnt 到一定次数，重建 selector；
+            // 要么被中断而返回，退出
+
+            // selector 被中断而返回
             if (Thread.interrupted()) {
-                // Thread was interrupted so reset selected keys and break so we not run into a busy loop.
-                // As this is most likely a bug in the handler of the user or it's client library we will
-                // also log it.
-                //
-                // See https://github.com/netty/netty/issues/2426
-                if (logger.isDebugEnabled()) {
-                    logger.debug("Selector.select() returned prematurely because " +
-                            "Thread.currentThread().interrupt() was called. Use " +
-                            "NioEventLoop.shutdownGracefully() to shutdown the NioEventLoop.");
-                }
+                // selector#select 被用户调用 Thread#interrupt而提前退出
+                // 重置 selectCnt 并退出本次调用
                 selectCnt = 1;
+                // 退出循环
                 break;
             }
 
             long time = System.nanoTime();
             if (time - TimeUnit.MILLISECONDS.toNanos(timeoutMillis) >= currentTimeNanos) {
-                // timeoutMillis elapsed without anything selected.
+                // 超时返回，下轮循环退出
                 selectCnt = 1;
             } else if (SELECTOR_AUTO_REBUILD_THRESHOLD > 0 &&
                     selectCnt >= SELECTOR_AUTO_REBUILD_THRESHOLD) {
-                // The selector returned prematurely many times in a row.
-                // Rebuild the selector to work around the problem.
-                logger.warn(
-                        "Selector.select() returned prematurely {} times in a row; rebuilding Selector {}.",
-                        selectCnt, selector);
-
+                // 要么被人唤醒或 jdk bug 而返回
+                // selector#select 方法提前返回次数超标，重建 selector
                 rebuildSelector();
                 selector = this.selector;
 
                 // Select again to populate selectedKeys.
                 selector.selectNow();
+                // 重新计数
                 selectCnt = 1;
+                // 退出循环
                 break;
             }
 
+            // 继续下一轮
             currentTimeNanos = time;
         }
 
         if (selectCnt > MIN_PREMATURE_SELECTOR_RETURNS) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("Selector.select() returned prematurely {} times in a row for Selector {}.",
-                        selectCnt - 1, selector);
-            }
+            // just log debug
         }
     } catch (CancelledKeyException e) {
-        if (logger.isDebugEnabled()) {
-            logger.debug(CancelledKeyException.class.getSimpleName() + " raised by a Selector {} - JDK bug?",
-                    selector, e);
-        }
         // Harmless exception - log anyway
     }
 }
@@ -424,9 +451,9 @@ private void select(boolean oldWakenUp) throws IOException {
 
 ## #processSelectedKeys
 
-下面的代码处理关注的所有发生的 io 事件。#processSelectedKeysPlain 依次处理所有 selectedKeys。
+下面的代码处理关注的所有发生的 io 事件。`#processSelectedKeysPlain`依次处理所有 selectedKeys。
 
-在遍历的过程当中，每取消 CLEANUP_INTERVAL 个 key，需要执行一次 #selectAgain。
+在遍历的过程当中，每取消`CLEANUP_INTERVAL`个 key，需要执行一次 #selectAgain。**为什么呢**？
 
 {% highlight java linenos %}
 private void processSelectedKeys() {
@@ -483,12 +510,14 @@ private void processSelectedKeysPlain(Set<SelectionKey> selectedKeys) {
 
 ## #processSelectedKey
 
-* 如果 key 不合法性，关闭属于自己的 channel，忽略不属于自己的 channel，并返回；
-* 如果 channel 上有 OP_CONNECT 事件，取消*连接关注*，并调用 Unsafe#finishConnect 结束连接过程；
-* 如果 channel 上有 OP_WRITE 事件，调用 Unsafe#forceFlush 直接写出出站缓冲区 *flush 区间*剩余数据；
-* 如果 channel 上有 OP_READ 或 OP_ACCEPT，调用 Unsafe#read，发起读操作。
+依次处理`OP_CONNECT`，`OP_WRITE`，`OP_READ`，`OP_ACCEPT`事件。
 
-> 方法 Unsafe#forceFlush 相比 Unsafe#flush，不需要调用 ChannelOutboundBuffer#addFlush 去标记 *flush 区间*。
+* 如果 key 不合法性，关闭属于自己的 channel，忽略不属于自己的 channel，并返回；
+* 如果 channel 上有`OP_CONNECT`事件，取消*连接关注*，并调用`Unsafe#finishConnect`结束连接过程；
+* 如果 channel 上有`OP_WRITE`事件，调用 `Unsafe#forceFlush` 直接写出出站缓冲区*flush 区间*剩余数据；
+* 如果 channel 上有`OP_READ`或`OP_ACCEPT`，调用 `Unsafe#read`，发起读操作。
+
+> 方法`Unsafe#forceFlush`相比 `Unsafe#flush`，不需要调用 `ChannelOutboundBuffer#addFlush` 去标记*flush 区间*。
 
 {% highlight java linenos %}
 private void processSelectedKey(SelectionKey k, AbstractNioChannel ch) {
@@ -521,13 +550,11 @@ private void processSelectedKey(SelectionKey k, AbstractNioChannel ch) {
             // 结束连接过程
             unsafe.finishConnect();
         }
-
         // 优先处理 写事件，可能也许大概可以清理部分内存
         if ((readyOps & SelectionKey.OP_WRITE) != 0) {
             // 数据刷完之后，会取消 写关注的
             ch.unsafe().forceFlush();
         }
-
         // Also check for readOps of 0 to workaround possible JDK bug 
         // which may otherwise lead to a spin loop
         if ((readyOps & (SelectionKey.OP_READ | SelectionKey.OP_ACCEPT)) != 0 
@@ -545,6 +572,8 @@ private void processSelectedKey(SelectionKey k, AbstractNioChannel ch) {
 ------
 
 ## #closeAll
+
+关闭*工作线程*中注册的所有通道。
 
 {% highlight java linenos %}
    private void closeAll() {
@@ -575,10 +604,19 @@ private void processSelectedKey(SelectionKey k, AbstractNioChannel ch) {
 
 ## #confirmShutdown
 
-* 确认当初所处的状态；
-* 确保只能在工作线程中调用；
-* 取消所有`scheduledTaskQueue`中的任务；
-* 
+执行*工作线程*关闭之前的准备工作，并确认能否关闭。执行队列中当前可以运行的所有任务，执行关闭钩子函数
+
+流程：
+
+1. 确认当前状态为*关闭准备中*；
+2. 确保只能在工作线程中调用；
+3. 取消所有`scheduledTaskQueue`中的任务；
+4. 如果是第一次调用，设置关闭启动时间`gracefulShutdownStartTime`；
+5. 如果队列中有任务，调用`#runAllTasks`执行所有任务；否则如果有 shutdownHook，调用`#runShutdownHooks`执行并清除所有的 shutdownHook
+6. 第 5 步中 2 个调用只要能成功执行 1 个，且*关闭静默期*为0，直接返回 TRUE；否则返回 FALSE；
+7. 第 5 步中没有任务、没有 hook 需要执行，状态为*已关闭*或者确认关闭时间已超时，返回 TRUE；
+8. *关闭静默期*还没有结束，睡眠`100ms`之后，返回 FALSE；
+9. *关闭静默期*已结束，返回 TRUE。
 
 {% highlight java linenos %}
 protected boolean confirmShutdown() {
@@ -586,51 +624,53 @@ protected boolean confirmShutdown() {
         // 当前不处于 关闭中
         return false;
     }
-
     // 确保只能在工作线程中调用
     if (!inEventLoop()) {
         throw new IllegalStateException("must be invoked from an event loop");
     }
-
     // 取消所有定时任务
     cancelScheduledTasks();
 
     if (gracefulShutdownStartTime == 0) {
+        // 设置关闭启动时间
         gracefulShutdownStartTime = ScheduledFutureTask.nanoTime();
     }
-
+    // 运行当前能运行的任务
+    // 运行所有 hooks
     if (runAllTasks() || runShutdownHooks()) {
+        // 至少执行了 1 个任务或者至少执行了 1 个 hook 才能到达这里
+
         if (isShutdown()) {
-            // Executor shut down - no new tasks anymore.
+            // 状态已经被改为 已关闭，直接返回 TRUE
             return true;
         }
-
-        // 如果静默期为 0，直接返回 TRUE；否则唤醒 selector
+        // 如果静默期为 0，直接返回 TRUE；
         if (gracefulShutdownQuietPeriod == 0) {
             // 大概可以关闭了
             return true;
         }
-
-        // 唤醒 selector
+        // 参数为 TRUE，说明在工作线程中调用，没有效果
         wakeup(true);
-
         // 还处于 关闭准备中
         return false;
     }
 
-    // 到这里，说明当前没有任务和 hook 需要执行
+    // 到这里，说明*当前*没有任务和 hook 需要执行
+    // 以下代码处理时间相关的逻辑：
+    // 关闭超时，返回 TRUE， 
+    // 静默期结束，返回 TRUE
 
     final long nanoTime = ScheduledFutureTask.nanoTime();
     // 已经关闭或关闭超时，返回 TRUE
-    if (isShutdown() || nanoTime - gracefulShutdownStartTime > gracefulShutdownTimeout) {
+    if (isShutdown() 
+            || nanoTime - gracefulShutdownStartTime > gracefulShutdownTimeout) {
         // 大概可以关闭了
         return true;
     }
-
     // 静默有效期
     if (nanoTime - lastExecutionTime <= gracefulShutdownQuietPeriod) {
         // Check if any tasks were added to the queue every 100ms.
-        // 唤醒 selector
+        // 参数为 TRUE，说明在工作线程中调用，没有效果
         wakeup(true);
         try {
             Thread.sleep(100);
@@ -640,7 +680,6 @@ protected boolean confirmShutdown() {
         // 还处于 关闭准备中
         return false;
     }
-
     // 静默期没有任务加入，大概可以关闭了
     return true;
 }
