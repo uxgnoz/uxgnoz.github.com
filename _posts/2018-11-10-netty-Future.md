@@ -21,7 +21,7 @@ Netty 里面所有的`io 操作`都是*异步执行*的。任何 io 调用都是
  
 |Uncompleted|Completed successfully|Completed with failure|Completed by cancellation|
 |:-------|:-------|:-------|:-------|
-|isDone() = false isSuccess() = false isCancelled() = false cause() = null|isDone() = true isSuccess() = true| isDone() = true cause() = non-null | isDone() = true  isCancelled() = true|
+|isDone() = false <br/> isSuccess() = false isCancelled() = false cause() = null|isDone() = true isSuccess() = true| isDone() = true cause() = non-null | isDone() = true  isCancelled() = true|
 
 
 
