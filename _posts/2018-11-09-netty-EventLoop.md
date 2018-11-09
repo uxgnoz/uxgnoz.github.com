@@ -874,7 +874,3 @@ protected static void safeExecute(Runnable task) {
     }
 }
 {% endhighlight %}
-{% highlight java linenos %}
-{% endhighlight %}
-{% highlight java linenos %}
-{% endhighlight %}
