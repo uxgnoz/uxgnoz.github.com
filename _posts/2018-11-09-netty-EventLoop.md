@@ -295,6 +295,7 @@ protected void run() {
                     // 设置 wakenUp 为 false，原先的值传入 #select
                     select(wakenUp.getAndSet(false));
 
+                    // 未知，可有可无？          
                     if (wakenUp.get()) {
                         selector.wakeup();
                     }
@@ -357,9 +358,22 @@ protected boolean hasTasks() {
 
 ## #select
 
-> 猜想： 
-> 
->  `wakenUp` 为 TRUE 时，*工作线程*应该**将要**或**正在**处理`taskQueue`、`scheduledQueue`、`tailTasks`队列中任务。
+在给定时间`timeoutMillis`内，等待 io 事件。
+
+在进入`Selector#select`阻塞前，检查有无任务在本方法调用之前且`wakenUp`为`TRUE`时提交，如有，以*非阻塞*的方式获取 io 事件，并退出调用。
+
+`Selector#select`退出后，检查下面各种退出条件，只要一个满足，退出方法调用。
+
+* 是否有*io 事件*；
+* 是否在`taskQueue`中有任务要执行；
+* 是否在`scheduledQueue`中有任务要执行；
+* 是否被用户唤醒。
+
+以上条件都不满足，
+
+* 要么超时返回，下轮退出调用；
+* 要么被人唤醒或`JDK bug`而提前返回，累计`selectCnt`到一定次数，重建`Selector`；
+* 要么被*中断*而提前返回，退出调用。
 
 {% highlight java linenos %}
 private void select(boolean oldWakenUp) throws IOException {
@@ -386,8 +400,8 @@ private void select(boolean oldWakenUp) throws IOException {
                 }
                 // 超时退出循环
                 break;
-            }
-            // 有任务需要执行，且 wakenUp 为 false
+            }    
+            // 及时响应 wakenUp 为 TRUE 时提交的任务，否则可能要等 timeoutMillis
             if (hasTasks() && wakenUp.compareAndSet(false, true)) {
                 // 首次循环才会到这里？
                 // 设置 wakenUp 为 TRUE，结束 #select
@@ -406,7 +420,7 @@ private void select(boolean oldWakenUp) throws IOException {
                     || wakenUp.get() 
                     || hasTasks() 
                     || hasScheduledTasks()) {
-                // 有 io 事件发生、队列中有任务、原先或当前的 wakenUp 为 TRUE
+                // 有 io 事件发生、队列中有任务、被用户唤醒
                 // 退出本次调用
                 break;
             }
@@ -427,7 +441,7 @@ private void select(boolean oldWakenUp) throws IOException {
 
             long time = System.nanoTime();
             if (time - TimeUnit.MILLISECONDS.toNanos(timeoutMillis) >= currentTimeNanos) {
-                // 超时返回，下轮循环退出
+                // 超时返回且没有 io 事件，下轮循环退出
                 selectCnt = 1;
             } else if (SELECTOR_AUTO_REBUILD_THRESHOLD > 0 &&
                     selectCnt >= SELECTOR_AUTO_REBUILD_THRESHOLD) {
