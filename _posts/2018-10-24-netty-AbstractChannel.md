@@ -57,7 +57,7 @@ public ChannelFuture connect(SocketAddress remoteAddress) {
 
 每个 Unsafe 实例都有自己的数据发送缓冲区 outboundBuffer。 ChannelOutboundBuffer 见 [Netty 之发送缓冲区 ChannelOutboundBuffer](/netty-ChannelOutboundBuffer/)。
 
-### AbstractUnsafe#register
+### #register
 
 AbstractUnsafe#register 主要功能为 channel 注册工作线程（EventLoop）。
 
@@ -165,7 +165,7 @@ public final void beginRead() {
 
 > #invokeLater 打包要执行的任务到工作线程异步执行。
 
-### AbstractUnsafe#deregister
+### #deregister
 
 channel 注销工作线程（EventLoop）。注销工作需要等到当前工作线程中的任务执行结束才能开始，因此需要把注销任务打包提交到工作线程，异步调用。
 
@@ -229,7 +229,7 @@ private void invokeLater(Runnable task) {
 }
 {% endhighlight %}
 
-### AbstractUnsafe#bind
+### #bind
 
 绑定 SocketAddress 到 ChannelPromise 中的 channel。
 
@@ -272,7 +272,7 @@ public final void bind(final SocketAddress localAddress, final ChannelPromise pr
 }
 {% endhighlight %}
 
-### AbstractUnsafe#write
+### #write
 
 向出站缓冲区 ChannelOutboundBuffer 末尾添加一条消息。
 
@@ -307,7 +307,7 @@ public final void write(Object msg, ChannelPromise promise) {
 }
 {% endhighlight %}
 
-### AbstractUnsafe#flush
+### #flush
 
 在出站缓冲区 ChannelOutboundBuffer 中标记要写出数据的范围 [flushedEntry, unflushedEntry)，调用具体实现的 #doWrite 把数据真正写出。
 
@@ -377,7 +377,7 @@ protected void flush0() {
 }
 {% endhighlight %}
 
-### AbstractUnsafe#close
+### #close
 
 关闭通道。
 
@@ -486,7 +486,7 @@ private void doClose0(ChannelPromise promise) {
 protected abstract void doClose() throws Exception;
 {% endhighlight %}
 
-### AbstractUnsafe#disconnect
+### #disconnect
 
 连接断开流程：
 
@@ -536,7 +536,7 @@ protected final void closeIfClosed() {
 }
 {% endhighlight %}
 
-### AbstractUnsafe#shutdownOutput
+### #shutdownOutput
 
 关闭`出站`流。
 
