@@ -9,7 +9,9 @@ layout: posts
 
 ## 综述
 
-`NioEventLoopGroup`中会负责维护一个`工作线程`数组，channel 注册时，它从数组中按特定算法挑选一个，提供给 channel 。默认的挑选算法是*循环挑选*。
+`NioEventLoopGroup`中内部维护一个`工作线程`数组，channel 注册时，它从数组中按特定算法挑选一个，提供给 channel 。默认的挑选算法是*循环挑选*。
+
+`NioEventLoopGroup`负责管理内部*工作线程*的生命周期。所有作为`EventExecutor`的职责，都通过委托的方式，给其中一个*工作线程*来处理。
 
 工作线程`NioEventLoop`请参考[Netty 之工作线程 NioEventLoop](/netty-NioEventLoop/)。
 
