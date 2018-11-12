@@ -71,6 +71,8 @@ AbstractUnsafe#register 主要功能为 channel 注册工作线程（EventLoop�
 6. 如果 channel 是首次注册，向管道中发送 channel `激活`事件；
 7. 如果 channel 是非首次注册，且 channel 设置了自动读取，则调用 #doBeginRead 发起数据读取操作。
 
+> Oio 的*工作线程*`ThreadPerChannelEventLoop`没有实现任何附加功能，空方法一个。
+
 {% highlight java linenos %}
 public final void register(EventLoop eventLoop, final ChannelPromise promise) {
     // 设置工作线程
