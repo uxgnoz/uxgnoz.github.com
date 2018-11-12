@@ -267,11 +267,12 @@ protected void cleanup() {
 
 NioEventLoop#run 总体执行流程：
 
-1. 当前`taskQueue`和`tailTasks`中还有未执行任务，跳转到第 2步 ；否则，执行`Selector#select`等待`io 事件`；
-2. 处理关注的所有发生的`io 事件`；
-3. 根据 ioRatio 执行队列中的任务；
-4. 如果需要关闭*工作线程*，#closeAll 关闭所有通道；#confirmShutdown 执行队列中所有未完成任务；结束*工作线程*；
-5. 否则，跳转到第 1 步。
+1. 当前`taskQueue`和`tailTasks`中还有未执行任务，转 3；否则转 2；
+2. 执行`Selector#select`等待`io 事件`；
+3. 处理`io 事件`；
+4. 根据 ioRatio 执行队列中的任务；
+5. 如果需要关闭*工作线程*，#closeAll 关闭所有通道；#confirmShutdown 执行队列中所有未完成任务；结束*工作线程*；
+6. 否则，转 1 ，继续下一轮循环。
 
 > `SelectStrategy`根据队列中当前的任务数和`Selector#selectNow`的执行结果情况，判断本轮循环是不是要执行阻塞`Selector#select`，等待`o 事件`。
 
@@ -621,7 +622,7 @@ private void processSelectedKey(SelectionKey k, AbstractNioChannel ch) {
 
 ## #confirmShutdown
 
-执行*工作线程*关闭之前的准备工作，并确认能否关闭。执行队列中当前可以运行的所有任务，执行关闭钩子函数
+执行*工作线程*关闭之前的准备工作，并确认能否关闭。执行队列中当前可以运行的所有任务，执行关闭钩子函数。
 
 流程：
 
