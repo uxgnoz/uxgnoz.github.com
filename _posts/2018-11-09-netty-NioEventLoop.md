@@ -7,12 +7,6 @@ layout: posts
 
 ------
 
-> **todo**
->
-> * *工作线程*状态变迁
-> * wakenUp 切换
-
-
 ## 综述
 
 从下面的`NioEventLoop`的继承树，很容易看出 Nio 的*工作线程*是单线程的。
@@ -273,11 +267,13 @@ protected void cleanup() {
 
 NioEventLoop#run 总体执行流程：
 
-1. 当前`taskQueue`和`tailTasks`中还有未执行任务，跳转到第 2步 ；否则，执行 select，检查有无关注的 io 事件；
-2. 处理关注的所有发生的 io 事件；
+1. 当前`taskQueue`和`tailTasks`中还有未执行任务，跳转到第 2步 ；否则，执行`Selector#select`等待`io 事件`；
+2. 处理关注的所有发生的`io 事件`；
 3. 根据 ioRatio 执行队列中的任务；
-4. 如果需要关闭工作线程，#closeAll 关闭所有通道；#confirmShutdown 执行队列中所有未完成任务；结束工作线程；
+4. 如果需要关闭*工作线程*，#closeAll 关闭所有通道；#confirmShutdown 执行队列中所有未完成任务；结束*工作线程*；
 5. 否则，跳转到第 1 步。
+
+> `SelectStrategy`根据队列中当前的任务数和`Selector#selectNow`的执行结果情况，判断本轮循环是不是要执行阻塞`Selector#select`，等待`o 事件`。
 
 {% highlight java linenos %}
 // NioEventLoop#run
@@ -294,7 +290,6 @@ protected void run() {
                     // 没有任务等待执行
                     // 设置 wakenUp 为 false，原先的值传入 #select
                     select(wakenUp.getAndSet(false));
-
                     // 未知，可有可无？          
                     if (wakenUp.get()) {
                         selector.wakeup();
