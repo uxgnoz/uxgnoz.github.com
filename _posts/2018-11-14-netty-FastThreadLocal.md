@@ -216,7 +216,7 @@ public FastThreadLocal() {
 }
 {% endhighlight %}
 
-`variablesToRemoveIndex`
+`variablesToRemoveIndex`指定用来存放`FastThreadLocal`实例的集合`variablesToRemove`在`indexedVariables`数组中的位置。集合`variablesToRemove`一般是数组第一个元素，或第一个非`UNSET`元素。
 
 ### #get
 
@@ -283,7 +283,7 @@ protected V initialValue() throws Exception {
 
 设置*线程本地变量*，并把相关联的`FastThreadLocal`实例放入`indexVariables`数组`variablesToRemoveIndex`下标处的集合中。
 
-当设置的变量为`UNSET`时，从
+当设置的变量为`UNSET`时，删除*线程本地变量*，并把自身从`variablesToRemove`集合中移除。
 
 {% highlight java linenos %}
 public final void set(V value) {
@@ -303,6 +303,7 @@ public final void set(InternalThreadLocalMap threadLocalMap, V value) {
             addToVariablesToRemove(threadLocalMap, this);
         }
     } else {
+        // 删除*线程本地变量*，并把自身从`variablesToRemove`集合中移除
         remove(threadLocalMap);
     }
 }
