@@ -14,6 +14,7 @@
                  }
       },
       settings = $.extend(defaults, options);
+      var idIndex = 0;
 
       function fixedEncodeURIComponent (str) {
         return encodeURIComponent(str).replace(/[!'()*]/g, function(c) {
@@ -29,9 +30,10 @@
       var headers = $(settings.headers).filter(function() {
         // get all headers with an ID
         var previousSiblingName = $(this).prev().attr( "name" );
-        if (!this.id && previousSiblingName) {
-          this.id = $(this).attr( "id", previousSiblingName.replace(/\./g, "-") );
-        }
+        // if (!this.id && previousSiblingName) {
+        //   this.id = $(this).attr( "id", previousSiblingName.replace(/\./g, "-") );
+        // } 
+        this.id = "id_" + (idIndex++);
         return this.id;
       }), output = $(this);
       if (!headers.length || headers.length < settings.minimumHeaders || !output.length) {
@@ -56,7 +58,8 @@
 
       var level = get_level(headers[0]),
         this_level,
-        html = settings.title + " <" +settings.listType + " class=\"" + settings.classes.list +"\">";
+        
+      html = settings.title + " <" + settings.listType + ">";
       headers.on('click', function() {
         if (!settings.noBackToTopLinks) {
           window.location.hash = this.id;
@@ -78,7 +81,7 @@
         }
         else if (this_level > level) { // lower level than before; expand the previous to contain a ol
           for(i = this_level; i > level; i--) {
-            html += "<" + settings.listType + " class=\"" + settings.classes.list +"\">" +
+            html += "<" + settings.listType + " class = 'nav nav-pills nav-stacked'>" +
                     "<li class=\"" + settings.classes.item + "\">"
           }
           html += createLink(header);

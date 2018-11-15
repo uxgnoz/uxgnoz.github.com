@@ -4408,7 +4408,8 @@ select[multiple].input-group-sm>.form-control,select[multiple].input-group-sm>.i
 }
 
 .nav-pills>li>a {
-    border-radius: 4px
+    border-radius: 3px;
+    border-left: 3px solid transparent;
 }
 
 .nav-pills>li+li {
@@ -4417,7 +4418,8 @@ select[multiple].input-group-sm>.form-control,select[multiple].input-group-sm>.i
 
 .nav-pills>li.active>a,.nav-pills>li.active>a:focus,.nav-pills>li.active>a:hover {
     color: #fff;
-    background-color: #337ab7
+    border-left: 3px solid #5fba3d;
+    /* background-color: #337ab7 */
 }
 
 .nav-stacked>li {
