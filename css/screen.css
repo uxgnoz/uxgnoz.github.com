@@ -383,7 +383,7 @@ img {
 
 #toc > ul > li > a{
     /* color: #28323C; */
-    font-weight: bold;
+    /* font-weight: bold; */
     margin-left: 20px;
 }
 
@@ -397,7 +397,7 @@ img {
 #toc a {
     position: relative;
     /*display: block;*/
-    padding: 5px 5px 5px 5px;
+    padding: 2px 5px 2px 5px;
     color: rgba(102, 128, 153);
 }
 
