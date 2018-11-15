@@ -51,6 +51,14 @@ private static Object[] newIndexedVariableTable() {
 }
 {% endhighlight %}
 
+下面这段代码是为了防止*伪共享*。通常 CPU 的*缓存行*一般是 64 或 128 字节，为了防止`InternalThreadLocalMap`的不同实例被加载到同一个*缓存行*，我们需要多余填充一些字段，使得每个实例的大小超出*缓存行*的大小。
+
+{% highlight java linenos %}
+// Cache line padding (must be public)
+// With CompressedOops enabled, an instance of this class should occupy at least 128 bytes.
+public long rp1, rp2, rp3, rp4, rp5, rp6, rp7, rp8, rp9;
+{% endhighlight %}
+
 ### @getIfSet
 
 静态方法`@getIfSet`从当前线程中拿出`InternalThreadLocalMap`实例，没有则返回`null`。
@@ -354,10 +362,6 @@ private static void removeFromVariablesToRemove(
     // 删除 FastThreadLocal 实例
     variablesToRemove.remove(variable);
 }
-{% endhighlight %}
-{% highlight java linenos %}
-{% endhighlight %}
-{% highlight java linenos %}
 {% endhighlight %}
 
 
