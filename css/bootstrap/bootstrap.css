@@ -4419,7 +4419,7 @@ select[multiple].input-group-sm>.form-control,select[multiple].input-group-sm>.i
 .nav-pills>li.active>a,.nav-pills>li.active>a:focus,.nav-pills>li.active>a:hover {
     color: #fff;
     border-left: 3px solid #5fba3d;
-    /* background-color: #337ab7 */
+    background-color: #eee;
 }
 
 .nav-stacked>li {
