@@ -34,7 +34,6 @@ categories: netty, timer
 
 {% highlight java linenos %}
 public boolean cancel() {
-    // only update the state it will be removed from HashedWheelBucket on next tick.
     // 修改句柄状态为 ST_CANCELLED
     if (!compareAndSetState(ST_INIT, ST_CANCELLED)) {
         // 修改失败返回 FALSE
@@ -191,8 +190,8 @@ public Timeout newTimeout(TimerTask task, long delay, TimeUnit unit) {
     if (maxPendingTimeouts > 0 && pendingTimeoutsCount > maxPendingTimeouts) {
         pendingTimeouts.decrementAndGet();
         throw new RejectedExecutionException("Number of pending timeouts ("
-            + pendingTimeoutsCount + ") is greater than or equal to maximum allowed pending "
-            + "timeouts (" + maxPendingTimeouts + ")");
+            + pendingTimeoutsCount + ") is greater than or equal to "
+            + "maximum allowed pending timeouts (" + maxPendingTimeouts + ")");
     }
 
     // 视定时器状态，启动『苦工线程』
@@ -227,7 +226,7 @@ public void start() {
             throw new Error("Invalid WorkerState");
     }
 
-    // 等待『苦工』初始化定时器启动时间
+    // 等待『苦工线程』初始化定时器启动时间
     while (startTime == 0) {
         try {
             startTimeInitialized.await();
@@ -583,9 +582,7 @@ private void processCancelledTasks() {
         try {
             timeout.remove();
         } catch (Throwable t) {
-            if (logger.isWarnEnabled()) {
-                logger.warn("An exception was thrown while process a cancellation task", t);
-            }
+            // just log warn
         }
     }
 }
@@ -610,8 +607,9 @@ private void transferTimeoutsToBuckets() {
         // 计算剩余圈数
         long calculated = timeout.deadline / tickDuration;
         timeout.remainingRounds = (calculated - tick) / wheel.length;
-        // 计算所属的桶（刻度）
-        final long ticks = Math.max(calculated, tick); // Ensure we don't schedule for past.
+        // 计算所属的桶
+        // Ensure we don't schedule for past.
+        final long ticks = Math.max(calculated, tick); 
         int stopIndex = (int) (ticks & mask);
         //  加入对应的桶
         HashedWheelBucket bucket = wheel[stopIndex];
