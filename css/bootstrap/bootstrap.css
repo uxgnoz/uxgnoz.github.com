@@ -4417,9 +4417,10 @@ select[multiple].input-group-sm>.form-control,select[multiple].input-group-sm>.i
 }
 
 .nav-pills>li.active>a,.nav-pills>li.active>a:focus,.nav-pills>li.active>a:hover {
-    color: #fff;
+    /* color: #fff; */
     border-left: 3px solid #5fba3d;
-    background-color: #eee;
+    border-right: 3px solid #5fba3d;
+    background-color: #f5f5f5;
 }
 
 .nav-stacked>li {
