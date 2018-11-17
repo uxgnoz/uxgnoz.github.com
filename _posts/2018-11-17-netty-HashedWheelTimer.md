@@ -15,7 +15,7 @@ categories: netty, timer
 * `tick`，节拍，每过一个节拍，指针移动一个刻度
 * `ticksPerWheel`，轮盘一圈包含的节拍数，也就是轮盘总刻度数
 * `tickDuration`，节拍间距，也就是指针走完相邻刻度的时长
-* `roundDuration`，*计时周期*，轮盘指针走完一圈耗时，$$ticksPerWheel * tickDuration$$。当任务的延期时长`delay`超出计时周期时，任务放入对应*桶*中的同时保存剩余圈数：$$roundsRemaining = delay \ / \ roundDuration$$
+* `roundDuration`，*计时周期*，轮盘指针走完一圈耗时，$$roundDuration=ticksPerWheel * tickDuration$$。当任务的延期时长`delay`超出计时周期时，任务放入对应*桶*中的同时保存剩余圈数：$$roundsRemaining = delay \ / \ roundDuration$$
 * *桶*，相邻刻度之间为桶，*桶*中以链表或其他形式存放延时任务。当指针走过该*桶*时，*桶*中超时的延时任务开始启动
 
 ![time wheel](/images/time_wheel.png)
@@ -24,7 +24,7 @@ categories: netty, timer
 
 ## HashedWheelTimeout
 
-*延时任务句柄*：当用户向定时器提交延时任务时，定时器返回一个*延时任务句柄*。通过延时句柄，用户可以查看延时任务状态，取消延时任务，获取延时任务等。定时器内部，也是在桶的双链表中以*延时任务句柄*的形式存放延时任务及其他相关信息。
+*延时任务句柄*，当用户向定时器提交延时任务时，定时器返回一个*延时任务句柄*。通过延时句柄，用户可以查看延时任务状态，取消延时任务，获取延时任务等。定时器内部，也是在桶的双链表中以*延时任务句柄*的形式存放延时任务及其他相关信息。
 
 ### #cancel
 
