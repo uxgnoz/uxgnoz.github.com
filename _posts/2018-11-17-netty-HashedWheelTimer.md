@@ -74,7 +74,7 @@ public void expire() {
 
 ### #remove
 
-从对应轮盘桶中删除本*延时任务句柄*。该方法会在**[#processCancelledTasks]**中调用。*延时任务句柄*先被取消，然后才会被移除。如果*延时任务句柄*还没有加入到某个轮盘桶中，也就是还在队列`timeouts`中，那么只需要递减等待任务数就好，在下一个节拍到来时，定时器会把它从队列`timeouts`中移除。
+从对应轮盘桶中删除本*延时任务句柄*。该方法会在**[#processCancelledTasks](#id_19)**中调用。*延时任务句柄*先被取消，然后才会被移除。如果*延时任务句柄*还没有加入到某个轮盘桶中，也就是还在队列`timeouts`中，那么只需要递减等待任务数就好，在下一个节拍到来时，定时器会把它从队列`timeouts`中移除。
 
 {% highlight java linenos %}
 void remove() {
