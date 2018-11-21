@@ -168,7 +168,7 @@ void free(long handle) {
     int memoryMapIdx = memoryMapIdx(handle);
     int bitmapIdx = bitmapIdx(handle);
 
-    // 此处省略小于一页的空间释放逻辑
+    // 此处省略页内空间释放逻辑
 
     // 增加可用空间大小
     freeBytes += runLength(memoryMapIdx);
