@@ -48,6 +48,7 @@ depth=maxOrder // 2^maxOrder 个节点 (chunkSize/2^maxOrder = pageSize)
 
 > `depth_of_id`：节点`id`的深度。
 
+------
 
 ## #allocateNode
 
@@ -127,6 +128,8 @@ private void setValue(int id, byte val) {
 }
 {% endhighlight %}
 
+------
+
 ## #allocateRun
 
 分配大小为`normCapacity`的连续空间，`normCapacity`为规范化后的数值。
@@ -153,6 +156,8 @@ private int runLength(int id) {
     return 1 << log2ChunkSize - depth(id);
 }
 {% endhighlight %}
+
+------
 
 ## #free
 
