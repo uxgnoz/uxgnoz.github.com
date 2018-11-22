@@ -1,10 +1,10 @@
 ---
-title: Netty 之缓存池实现：Buddy 算法
+title: Netty 之内存分配：Buddy 算法
 layout: posts
 categories: netty, buddy, 内存分配
 ---
 
-# Netty 之缓存池实现：Buddy 算法
+# Netty 之内存分配：Buddy 算法
 
 ------
 
