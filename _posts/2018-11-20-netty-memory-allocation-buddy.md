@@ -205,12 +205,12 @@ private void updateParentsFree(int id) {
         id = parentId;
     }
 }
-
-private static int bitmapIdx(long handle) {
-    return (int) (handle >>> Integer.SIZE);
-}
-
+// 取低 32 位
 private static int memoryMapIdx(long handle) {
     return (int) handle;
+}
+// 取高 32 位
+private static int bitmapIdx(long handle) {
+    return (int) (handle >>> Integer.SIZE);
 }
 {% endhighlight %}
