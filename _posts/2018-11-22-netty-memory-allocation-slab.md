@@ -174,13 +174,48 @@ void free(long handle) {
     updateParentsFree(memoryMapIdx);
 }
 
-// 取低 32 位
+// 取低 32 位，叶节点编号
 private static int memoryMapIdx(long handle) {
     return (int) handle;
 }
-// 取高 32 位
+// 取高 32 位，页内空间编号
 private static int bitmapIdx(long handle) {
     return (int) (handle >>> Integer.SIZE);
+}
+{% endhighlight %}
+
+------
+
+## #initBufWithSubpage
+
+初始化`PooledByteBuf`实例对应的底层内存空间。`handle`包含页内空间编号和相应的叶节点编号，`reqCapacity`为请求容量。
+
+{% highlight java linenos %}
+void initBufWithSubpage(PooledByteBuf<T> buf, long handle, int reqCapacity) {
+    initBufWithSubpage(buf, handle, bitmapIdx(handle), reqCapacity);
+}
+
+private void initBufWithSubpage(PooledByteBuf<T> buf, long handle, int bitmapIdx, 
+        int reqCapacity) {
+    assert bitmapIdx != 0;
+    // 叶节点编号
+    int memoryMapIdx = memoryMapIdx(handle);
+    // 获取叶节点对应的 PoolSubpage 实例
+    PoolSubpage<T> subpage = subpages[subpageIdx(memoryMapIdx)];
+    assert subpage.doNotDestroy;
+    // 确保请求的容量小于该页的页内空间大小
+    assert reqCapacity <= subpage.elemSize;
+    // 初始化 buf
+    buf.init(
+        this, // 所属的块
+        handle, // 页内编号和叶节点编号
+        // 分配的空间首地址在块内存中的偏移量
+        // 块偏移（offset） + 页偏移 + 页内偏移
+        runOffset(memoryMapIdx) + (bitmapIdx & 0x3FFFFFFF) * subpage.elemSize + offset,
+        reqCapacity, // 实际占用的空间大小
+        subpage.elemSize, // 分配的空间大小
+        arena.parent.threadCache()  // 线程本地缓存
+    );
 }
 {% endhighlight %}
 
@@ -431,5 +466,4 @@ private void setNextAvail(int bitmapIdx) {
     nextAvail = bitmapIdx;
 }
 {% endhighlight %}
-{% highlight java linenos %}
-{% endhighlight %}
+
