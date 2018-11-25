@@ -159,6 +159,39 @@ private int runLength(int id) {
 
 ------
 
+## #initBuf
+
+初始化`PooledByteBuf`实例对应的底层内存空间。`handle`包含页内空间编号和相应的叶节点编号，`reqCapacity`为请求容量。
+
+{% highlight java linenos %}
+void initBuf(PooledByteBuf<T> buf, long handle, int reqCapacity) {
+    // 块节点编号
+    int memoryMapIdx = memoryMapIdx(handle);
+    // 页内空间编号
+    int bitmapIdx = bitmapIdx(handle);
+    // 普通空间
+    if (bitmapIdx == 0) {
+        byte val = value(memoryMapIdx);
+        assert val == unusable : String.valueOf(val);
+        // 初始化 buf 底层空间
+        buf.init(
+            this, // 所属的块
+            handle, // 块节点编号
+            // 块偏移（offset） + 页偏移
+            runOffset(memoryMapIdx) + offset, 
+            reqCapacity, // 实际占用的空间大小
+            runLength(memoryMapIdx), // 分配的空间大小
+            rena.parent.threadCache()   // 线程本地缓存
+        );
+    } 
+    // 页内空间
+    else {
+        // 初始化 buf 对应的页内空间
+        initBufWithSubpage(buf, handle, bitmapIdx, reqCapacity);
+    }
+}
+{% endhighlight %}
+
 ## #free
 
 释放编号为`handle`的节点，修改节点状态为*空闲*，回溯更新父节点分配状态，直到根节点。
