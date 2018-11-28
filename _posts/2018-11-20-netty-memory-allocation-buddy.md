@@ -163,6 +163,8 @@ private int runLength(int id) {
 
 初始化`PooledByteBuf`实例对应的底层内存空间。`handle`包含页内空间编号和相应的叶节点编号，`reqCapacity`为请求容量。
 
+方法`#initBufWithSubpage`参见[Netty 之内存分配：Slab 算法](/netty-memory-allocation-slab/#id_5)。
+
 {% highlight java linenos %}
 void initBuf(PooledByteBuf<T> buf, long handle, int reqCapacity) {
     // 块节点编号
@@ -191,6 +193,27 @@ void initBuf(PooledByteBuf<T> buf, long handle, int reqCapacity) {
     }
 }
 {% endhighlight %}
+
+-----
+
+## #allocate
+
+分配请求参数`normCapacity`指定大小的空间，并返回分配的代表块节点编号和页内空间编号的`handle`值。
+
+{% highlight java linenos %}
+long allocate(int normCapacity) {
+    // 块节点空间分配
+    if ((normCapacity & subpageOverflowMask) != 0) { 
+        return allocateRun(normCapacity);
+    }
+    // 页内空间分配 
+    else {
+        return allocateSubpage(normCapacity);
+    }
+}
+{% endhighlight %}
+
+-----
 
 ## #free
 
