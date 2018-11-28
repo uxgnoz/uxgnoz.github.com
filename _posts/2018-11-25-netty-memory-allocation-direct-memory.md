@@ -205,7 +205,7 @@ static byte getByte(long address) {
 
 内存复制。从源地址`srcAddr`到目标地址`dstAddr`，复制长度为`length`字节的数据。
 
-Java 9 之前的`UNSAFE#copyMemory`没有做`SafePoint`轮询，需要我们主动处理，因此，把整个拷贝分成多次，每次默认最多复制 1MB。Java 9+ 就简单了，因为它内置了`SafePoint`检查。
+Java 9 之前的`Unsafe#copyMemory`没有做`SafePoint`轮询，需要我们主动处理，因此，把整个拷贝分成多次，每次默认最多复制 1MB。Java 9+ 就简单了，因为它内置了`SafePoint`检查。
 
 {% highlight java linenos %}
 public static void copyMemory(long srcAddr, long dstAddr, long length) {
