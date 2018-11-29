@@ -101,16 +101,16 @@ boolean allocate(PooledByteBuf<T> buf, int reqCapacity, int normCapacity) {
             cur.initBuf(buf, handle, reqCapacity);
             // 当前块的使用量超出最大使用量了
             if (cur.usage() >= maxUsage) {
-                // 从双链表中删除当前块
+                // 从当前块链表中删除块 cur
                 remove(cur);
-                // 把当前块加入下一个链表中
+                // 把块 cur 加入下一个 块链表 中
                 nextList.add(cur);
             }
             return true;
         }
     }
 }
-// 从当前的双链表中删除该块
+// 从块链表内部的双链表中删除该块
 private void remove(PoolChunk<T> cur) {
     if (cur == head) {
         head = cur.next;
