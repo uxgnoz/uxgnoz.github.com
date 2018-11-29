@@ -246,20 +246,36 @@ final void reuse(int maxCapacity) {
 final class PooledDirectByteBuf extends PooledByteBuf<ByteBuffer>
 {% endhighlight %}
 
-## #_getUnsignedMedium
+### #getBytes
 
 {% highlight java  linenos %}
-protected int _getUnsignedMedium(int index) {
+private void getBytes(int index, byte[] dst, int dstIndex, int length, boolean internal) {
+    checkDstIndex(index, length, dstIndex, dst.length);
+    ByteBuffer tmpBuf;
+    if (internal) {
+        tmpBuf = internalNioBuffer();
+    } else {
+        tmpBuf = memory.duplicate();
+    }
     index = idx(index);
-    return (memory.get(index) & 0xff)     << 16 |
-            (memory.get(index + 1) & 0xff) << 8  |
-            memory.get(index + 2) & 0xff;
+    tmpBuf.clear().position(index).limit(index + length);
+    tmpBuf.get(dst, dstIndex, length);
+}
+
+protected final ByteBuffer internalNioBuffer() {
+    ByteBuffer tmpNioBuf = this.tmpNioBuf;
+    if (tmpNioBuf == null) {
+        this.tmpNioBuf = tmpNioBuf = newInternalNioBuffer(memory);
+    }
+    return tmpNioBuf;
 }
 {% endhighlight %}
 
 ### @newInstance
 
 获取一个`PooledDirectByteBuf`实例，重用的或新创建的。
+
+实例回收/重用见 [Netty 之实例重用：Recycler](/netty-Recycler)。
 
 {% highlight java  linenos %}
 static PooledDirectByteBuf newInstance(int maxCapacity) {
@@ -279,9 +295,29 @@ static PooledDirectByteBuf newInstance(int maxCapacity) {
 final class PooledUnsafeDirectByteBuf extends PooledByteBuf<ByteBuffer> 
 {% endhighlight %}
 
+### #getBytes
+
+{% highlight java  linenos %}
+public ByteBuf getBytes(int index, byte[] dst, int dstIndex, int length) {
+    UnsafeByteBufUtil.getBytes(this, addr(index), index, dst, dstIndex, length);
+    return this;
+}
+
+static void getBytes(AbstractByteBuf buf, long addr, int index, byte[] dst, int dstIndex, int length) {
+    buf.checkIndex(index, length);
+    checkNotNull(dst, "dst");
+    if (isOutOfBounds(dstIndex, length, dst.length)) {
+        throw new IndexOutOfBoundsException("dstIndex: " + dstIndex);
+    }
+    if (length != 0) {
+        PlatformDependent.copyMemory(addr, dst, dstIndex, length);
+    }
+}
+{% endhighlight %}
+
 ### @newInstance
 
-获取一个`PooledUnsafeDirectByteBuf`实例，重用的或新创建的。
+获取一个`PooledUnsafeDirectByteBuf`实例，重用的或新创建的。实例回收/重用见 [Netty 之实例重用：Recycler](/netty-Recycler)。
 
 {% highlight java  linenos %}
 static PooledUnsafeDirectByteBuf newInstance(int maxCapacity) {
