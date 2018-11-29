@@ -35,10 +35,10 @@ private PoolChunkList<T> prevList;
 在构造*块链表*实例的时候，需要初始化下面的字段：
 
 * `arena`，所属的`PoolArena`；
-* `nextList`，后驱节点
+* `nextList`，后驱节点；
 * `minUsage`，最小使用率；
 * `maxUsage`，最大使用率；
-* `maxCapacity`，最大分配容量，$$chunkSize * ((100 - minUsage)\ \ /\ 100)$$。
+* `maxCapacity`，最大分配容量，$$chunkSize * ((100 - minUsage)\ \ /\ 100)$$。块加入某个*块链表*时，它的使用量肯定大于或等于该*块链表*的最低使用率`minUsage`，因此，它所能分配的最大空间率只能是$$1 - minUsage\  /\  100$$。通过`maxCapacity`，我们可以快速判断请求的空间当前*块链表*能不能满足，而不需要继续去遍历*块链表*中的块。
 
 {% highlight java linenos %}
 PoolChunkList(PoolArena<T> arena, PoolChunkList<T> nextList, 
@@ -135,8 +135,8 @@ private void remove(PoolChunk<T> cur) {
 
 返回值：
 
-* TRUE，说明回收成功
-* FALSE，说明回收成功，且块完全空闲，需要销毁
+* TRUE，说明回收成功；
+* FALSE，说明回收成功，且块完全空闲，需要销毁。
 
 `handle`为*块节点*编号和*页内空间*编号。
 
