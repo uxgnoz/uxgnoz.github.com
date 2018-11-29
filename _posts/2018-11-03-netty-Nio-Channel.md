@@ -1,13 +1,13 @@
 ---
-title: Netty 之多路复用通道 NioServerSocketChannel / NioSocketChannel
+title: Netty 之多路复用通道 
 layout: posts
 ---
 
-# Netty 之多路复用通道 NioServerSocketChannel / NioSocketChannel
+# Netty 之多路复用通道
 
 ------
 
-## 0x01 AbstractNioChannel
+## AbstractNioChannel
 
 AbstractNioChannel 是所有基于 Selector 多路复用通道的抽象基类。下面是它的部分字段及构造方法。
 
@@ -168,7 +168,7 @@ protected final ByteBuf newDirectBuffer(ByteBuf buf) {
 
 ------
 
-## 0x02 AbstractNioChannel#AbstractNioUnsafe
+## AbstractNioChannel#AbstractNioUnsafe
 
 AbstractNioUnsafe 继承了 AbstractChannel#AbstractUnsafe，同时实现了 AbstractNioChannel#NioUnsafe 接口。
 
@@ -364,7 +364,7 @@ private boolean isFlushPending() {
 
 ------
 
-## 0x03 NioServerSocketChannel
+## NioServerSocketChannel
 
 NioServerSocketChannel 的继承树如下：
 
@@ -375,7 +375,7 @@ AbstractChannel
     <- NioServerSocketChannel
 {% endhighlight %}
 
-### 0x0301 AbstractNioMessageChannel
+### AbstractNioMessageChannel
 
 {% highlight java linenos %}
 {% endhighlight %}
@@ -460,7 +460,7 @@ public void read() {
 }
 {% endhighlight %}
 
-### 0x0302 NioServerSocketChannel
+### NioServerSocketChannel
 
 下面是 NioServerSocketChannel 的具体构造方法。注意 `readInterestOp` 为 `SelectionKey.OP_ACCEPT`。
 
@@ -528,7 +528,7 @@ public boolean isActive() {
 
 ------
 
-## 0x04 NioSocketChannel
+## NioSocketChannel
 
 NioServerSocketChannel 的继承树如下：
 
@@ -539,7 +539,7 @@ AbstractChannel
     <- NioSocketChannel
 {% endhighlight %}
 
-### 0x0401 AbstractNioByteChannel
+### AbstractNioByteChannel
 
 从下面的构造方法，我们可以看出客户端通道 的 `readInterestOp` 都是 `SelectionKey.OP_READ`。
 
@@ -687,7 +687,7 @@ protected final void clearOpWrite() {
 }
 {% endhighlight %}
 
-### 0x0402 AbstractNioByteChannel$NioByteUnsafe
+### AbstractNioByteChannel$NioByteUnsafe
 
 方法 #isAllowHalfClosure 判断是否允许半关闭。
 
@@ -837,7 +837,7 @@ private void closeOnRead(ChannelPipeline pipeline) {
 }
 {% endhighlight %}
 
-### 0x0403 NioSocketChannel
+### NioSocketChannel
 
 方法 #doConnect 作为 AbstractNioChannel#doConnect 的具体实现，调用了低层 SocketChannel#connect 方法，向服务端发起连接。 由于 Netty 中的*多路复用通道*总是被设置成*非阻塞*模式，因此 #connect 方法总是立即反回 false（？），这时需要在 selectionKey 中加入关注事件类型 *SelectionKey.OP_CONNECT*。在执行下一轮 #select 时，一旦出现该类事件，说明*连接已完成*，可以调用 SocketChannel#finishConnect 方法结束连接过程。
 
@@ -1023,7 +1023,4 @@ private void doBind0(SocketAddress localAddress) throws Exception {
         SocketUtils.bind(javaChannel().socket(), localAddress);
     }
 }
-{% endhighlight %}
-
-{% highlight java linenos %}
 {% endhighlight %}

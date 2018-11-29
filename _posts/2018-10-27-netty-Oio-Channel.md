@@ -1,9 +1,9 @@
 ---
-title: Netty 之同步阻塞通道 OioServerSocketChannel / OioSocketChannel
+title: Netty 之同步阻塞通道 
 layout: posts
 ---
 
-# Netty 之同步阻塞通道 OioServerSocketChannel / OioSocketChannel
+# Netty 之同步阻塞通道 
 
 ------
 
@@ -796,4 +796,4 @@ private static void shutdownDone(ChannelFuture shutdownOutputFuture,
 }
 {% endhighlight %}
 
-其他还有一些状态判断和 addres 获取相关的方法，很简单，不赘述。
+其他还有一些状态判断和 address 获取相关的方法，很简单，不赘述。
