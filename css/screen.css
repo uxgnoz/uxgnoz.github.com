@@ -17,7 +17,7 @@ html, body {
 
 body {
     background-color: #F9F9F5;
-    font: 14px '宋体';
+    font: 15px '宋体';
     /**font-size: small;*/
     text-align: left;
     color: #28323C;
@@ -132,11 +132,11 @@ ol, ul {
 /*****************************************************************************/
 
 .site {
-    font-size: 14px;
+    font-size: 15px;
     text-align: left;
     /*width: 880px;*/
     margin: 14px auto 0 auto;
-    line-height: 27px;
+    line-height: 30px;
 }
 
 .title {
