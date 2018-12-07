@@ -16,7 +16,7 @@ html, body {
 }
 
 body {
-    background-color: #F9F9F5;
+    /* background-color: #F9F9F5; */
     font: 15px '宋体';
     /**font-size: small;*/
     text-align: left;
@@ -229,7 +229,7 @@ figure > pre {
     padding: 7px 5px 5px 7px;
     line-height: 20px;
     font-family: 'Courier', '宋体', sans-serif;
-    /* overflow-x: auto; */
+    overflow-x: auto;
 }
 
 /* terminal */
