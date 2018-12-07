@@ -66,3 +66,5 @@ categories: java, garbage collection, gc
 *标记-复制*算法和*标记-整理*算法非常相似，它们都要给存活对象重新分配空间。最大的区别是，重新分配所在的内存区域不同。*标记-复制*的优点是*标记*和*复制*可以同时进行，缺点是需要多一块足够大的内存区域来容纳存活对象。
 
 ![GC-mark-and-copy-in-Java](/images/2018-12-05-GC-mark-and-copy-in-Java.png)
+
+> 原文地址：[GC Algorithms: Basics](https://plumbr.io/handbook/garbage-collection-algorithms)。
