@@ -8,6 +8,8 @@ categories: java, garbage collection, gc
 
 ------
 
+## 概述
+
 这个组合的垃圾收集器使用*标记-复制*的方式清理*年轻代*，使用*标记-清除-整理*的方式清理*老年代*。正如名字所指，这些收集器都是单线程的，不能并行处理。它们也都会触发`Stop-the-world`暂停，挂起应用的全部线程。
 
 `Serial GC`算法不能发挥出现代多核处理器的优势，因为它不依赖与 CPU 核心数，在垃圾收集时**仅仅使用一个核心**。
@@ -67,6 +69,8 @@ java -XX:+UseSerialGC com.mypackages.MyExecutableClass
 下图示意了垃圾收集前后的内存使用情况。
 
 ![serial-gc-in-young-generation](/images/2018-12-06-serial-gc-in-young-generation.png)
+
+------
 
 ## Full GC
 
