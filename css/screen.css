@@ -117,7 +117,7 @@ ul.index_posts span {
 .highlighter-rouge {
     font-family: '宋体';
     color: #f99157;
-    /* font-weight: bold; */
+    font-weight: 700;
 }
 
 ol, ul {
@@ -297,7 +297,7 @@ strike, linethru {
 #post em {
     font-style: normal;
     color: #5f9a3d;
-    /* font-weight: 900; */
+    font-weight: 700;
     padding: 2px 4px;
     font-size: 100%;
     /*color: #c7254e;*/
