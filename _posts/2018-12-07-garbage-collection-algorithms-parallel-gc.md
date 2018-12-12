@@ -98,3 +98,15 @@ java -XX:+UseParallelGC -XX:+UseParallelOldGC com.mypackages.MyExecutableClass
 ![Java-ParallelGC-in-Old-Generation](/images/2018-12-06-Java-ParallelGC-in-Old-Generation.png)
 
 > 原文地址：[GC Algorithms: Parallel GC](https://plumbr.io/handbook/garbage-collection-algorithms-implementations#parallel-gc)。
+
+
+------
+
+## 相关文章
+
+* [Java 垃圾收集](/garbage-collection-in-java/)
+* [Java 垃圾收集算法：基础篇](/garbage-collection-algorithms-basics/)
+* [Java 垃圾收集算法：Serial GC](/garbage-collection-algorithms-serial-gc/)
+* [Java 垃圾收集算法：Parallel GC](/garbage-collection-algorithms-parallel-gc/)
+* [Java 垃圾收集算法：Concurrent Mark and Sweep](/garbage-collection-algorithms-concurrent-mark-and-sweep/)
+* [Java 垃圾收集算法：G1](/garbage-collection-algorithms-garbage-first/)

@@ -208,3 +208,14 @@ G1 算法建立在很多 CMS 的概念之上，所以先了解下 [CMS 算法](/
 > 5. `Redirty Cards: 0.1 ms` -- 标记卡表适当位置状态为脏花费的时间。合适的位置是由 GC 导致的堆内变动所决定的，比如，GC 时把引用加入引用队列。
 
 > 原文地址：[GC Algorithms: Garbage First](https://plumbr.io/handbook/garbage-collection-algorithms-implementations#g1)。
+
+------
+
+## 相关文章
+
+* [Java 垃圾收集](/garbage-collection-in-java/)
+* [Java 垃圾收集算法：基础篇](/garbage-collection-algorithms-basics/)
+* [Java 垃圾收集算法：Serial GC](/garbage-collection-algorithms-serial-gc/)
+* [Java 垃圾收集算法：Parallel GC](/garbage-collection-algorithms-parallel-gc/)
+* [Java 垃圾收集算法：Concurrent Mark and Sweep](/garbage-collection-algorithms-concurrent-mark-and-sweep/)
+* [Java 垃圾收集算法：G1](/garbage-collection-algorithms-garbage-first/)
